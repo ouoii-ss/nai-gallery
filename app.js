@@ -2,7 +2,7 @@
   'use strict';
   const ADMIN_PASS = 'nai';           // 管理口令（本地策展用，改这里即可）
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
-  const DC_ALLOW = [];                 // 白名单：留空=任何 Discord 账号可进；填入你的 Discord 用户 ID（字符串数组）则只放这些 ID
+  const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 48;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
