@@ -159,6 +159,8 @@
     $('#lbNext').addEventListener('click', () => navLb(1));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
     document.querySelectorAll('.copyBtn').forEach(b => b.addEventListener('click', () => copyText($('#' + b.dataset.copy).value)));
+    $('#lbDlImg').addEventListener('click', downloadCurrentImage);
+    $('#lbDlTxt').addEventListener('click', downloadCurrentPrompt);
 
     // 抽卡
     $('#draw1').addEventListener('click', () => draw(1));
@@ -274,6 +276,27 @@
     const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败'); }
     document.body.removeChild(ta);
+  }
+  function safeName(s) { return (s || 'nai').replace(/[^\w.\-一-鿿]/g, '_'); }
+  async function downloadCurrentImage() {
+    const src = $('#lbImg').src;
+    if (!src) return;
+    const name = safeName($('#lbTitle').textContent) + '.png';
+    try {
+      const r = await fetch(src); if (!r.ok) throw new Error('fetch ' + r.status);
+      const b = await r.blob(); const u = URL.createObjectURL(b);
+      const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(u); toast('已开始下载图片');
+    } catch (e) { toast('下载图片失败（跨域或网络问题）'); }
+  }
+  function downloadCurrentPrompt() {
+    const p = $('#lbPos').value || '', n = $('#lbNeg').value || '';
+    const txt = 'Title: ' + ($('#lbTitle').textContent || '') + '\nArtist: ' + ($('#lbArtist').textContent || '') +
+      '\n\nPositive:\n' + p + '\n\nNegative:\n' + n + '\n';
+    const b = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a'); a.href = u; a.download = safeName($('#lbTitle').textContent) + '.txt';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); toast('已下载提示词 ✓');
   }
 
   // —— 抽卡 / 塔罗 ——

@@ -92,6 +92,8 @@ main{padding:18px; max-width:1400px; margin:0 auto}
 .lb-artist{color:var(--berry); font-size:14px; margin-bottom:12px}
 .lb-prompt{margin-bottom:12px}
 .lb-prompt-head{display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:700; color:var(--berry); margin-bottom:4px}
+.lb-acts{display:flex; gap:8px; margin:10px 0 4px}
+.lb-acts .copyBtn{background:var(--pink-3); color:var(--berry)}
 .lb-prompt textarea{width:100%; border:1.5px solid var(--line); border-radius:10px; padding:8px; font-size:12.5px; resize:vertical; background:#fffafc; color:var(--ink); line-height:1.5}
 .copyBtn{border:0; background:var(--pink); color:#fff; border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer}
 .copyBtn:active{background:var(--berry)}
