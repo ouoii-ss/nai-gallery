@@ -39,8 +39,9 @@
   function startDiscordLogin() {
     if (!DISCORD_CLIENT_ID) { toast('请先在 app.js 顶部填 DISCORD_CLIENT_ID'); return; }
     const verifier = randStr(32), state = randStr(16);
-    sessionStorage.setItem('pg_dc_v', verifier);
-    sessionStorage.setItem('pg_dc_s', state);
+    // 用 localStorage（非 sessionStorage）：手机上 Discord 会跳外部 App/浏览器再跳回，sessionStorage 会丢失导致 state 不匹配
+    localStorage.setItem('pg_dc_v', verifier);
+    localStorage.setItem('pg_dc_s', state);
     pkceChallenge(verifier).then(challenge => {
       const p = new URLSearchParams({
         response_type: 'code', client_id: DISCORD_CLIENT_ID, scope: 'identify',
@@ -55,8 +56,9 @@
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     if (!code) return false;
-    const verifier = sessionStorage.getItem('pg_dc_v');
-    const savedState = sessionStorage.getItem('pg_dc_s');
+    const verifier = localStorage.getItem('pg_dc_v');
+    const savedState = localStorage.getItem('pg_dc_s');
+    localStorage.removeItem('pg_dc_v'); localStorage.removeItem('pg_dc_s'); // 一次性用完即清，避免旧 state 被复用
     history.replaceState({}, document.title, location.pathname); // 清掉 URL 里的 code，避免刷新重复兑换
     if (state !== savedState || !verifier) { toast('Discord 回调解码失败（state 不匹配）'); return false; }
     try {
@@ -161,6 +163,7 @@
     document.querySelectorAll('.copyBtn').forEach(b => b.addEventListener('click', () => copyText($('#' + b.dataset.copy).value)));
     $('#lbDlImg').addEventListener('click', downloadCurrentImage);
     $('#lbDlTxt').addEventListener('click', downloadCurrentPrompt);
+    $('#lbDlVibe').addEventListener('click', downloadCurrentVibe);
 
     // 抽卡
     $('#draw1').addEventListener('click', () => draw(1));
@@ -262,6 +265,7 @@
     $('#lbNeg').value = a.negative || '';
     const tags = (a.tags || []).filter(Boolean);
     $('#lbTags').innerHTML = tags.length ? tags.map(t => `<span class="t">#${esc(t)}</span>`).join('') : '';
+    $('#lbDlVibe').style.display = (a && a.raw) ? '' : 'none';
   }
   function navLb(d) { lbIdx = (lbIdx + d + lbList.length) % lbList.length; renderLb(); }
   function closeLightbox() { $('#lightbox').classList.add('hidden'); }
@@ -277,7 +281,7 @@
     try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败'); }
     document.body.removeChild(ta);
   }
-  function safeName(s) { return (s || 'nai').replace(/[^\w.\-一-鿿]/g, '_'); }
+  function safeName(s) { return (s || 'nai').replace(/[^\w.\-一-鿿＀-￯]/g, '_'); }
   async function downloadCurrentImage() {
     const src = $('#lbImg').src;
     if (!src) return;
@@ -297,6 +301,30 @@
     const u = URL.createObjectURL(b);
     const a = document.createElement('a'); a.href = u; a.download = safeName($('#lbTitle').textContent) + '.txt';
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); toast('已下载提示词 ✓');
+  }
+  // 下载 Vibe 原文件：按真实格式命名（单个 .naiv4vibe / 打包 .naiv4vibebundle），内容来自 vibes-raw/<id>.json
+  async function downloadCurrentVibe() {
+    const a = lbList[lbIdx]; if (!a || !a.raw) return;
+    try {
+      const r = await fetch(a.raw); if (!r.ok) throw new Error('fetch ' + r.status);
+      const text = await r.text();
+      // 由内容 identifier 判定真实格式：bundle → .naiv4vibebundle，否则 .naiv4vibe
+      let ext = '.naiv4vibe';
+      try { const j = JSON.parse(text); if (j && j.identifier === 'novelai-vibe-bundle') ext = '.naiv4vibebundle'; } catch (_) {}
+      const orig = a.originalFilename || '';
+      let name;
+      if (/\.naiv4vibebundle$/i.test(orig)) name = safeName(orig);
+      else if (/\.naiv4vibe$/i.test(orig)) name = safeName(orig);
+      else {
+        // 无后缀或带 .json 的（如「折枝.naiv4vibe.json」）：去掉已知后缀后按内容补正确扩展名
+        const base = orig.replace(/(\.naiv4vibe|\.naiv4vibebundle|\.json)+$/i, '') || (a.title || 'vibe');
+        name = safeName(base + ext);
+      }
+      const b = new Blob([text], { type: 'application/json;charset=utf-8' });
+      const u = URL.createObjectURL(b);
+      const link = document.createElement('a'); link.href = u; link.download = name; document.body.appendChild(link); link.click(); link.remove();
+      URL.revokeObjectURL(u); toast('已下载 Vibe 原文件 ✓');
+    } catch (e) { toast('下载 Vibe 失败（网络/跨域）'); }
   }
 
   // —— 抽卡 / 塔罗 ——
@@ -345,7 +373,7 @@
     });
   }
   function openVibe(v) {
-    const a = { id: v.id, title: v.name, artist: v.artist || '', positive: v.positive || '', negative: v.negative || '', tags: v.tags || [], thumb: v.thumbnail, full: v.thumbnail, batch: v.batch || '' };
+    const a = { id: v.id, title: v.name, artist: v.artist || '', positive: v.positive || '', negative: v.negative || '', tags: v.tags || [], thumb: v.thumbnail, full: v.thumbnail, batch: v.batch || '', raw: v.raw ? normPath(v.raw) : '', originalFilename: v.originalFilename || '' };
     lbList = [a]; lbIdx = 0; renderLb(); $('#lightbox').classList.remove('hidden');
   }
 
