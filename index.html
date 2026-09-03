@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌸 我的 NAI 画廊</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
+<div id="loginWall" class="login-wall hidden">
+  <div class="lw-card">
+    <div class="lw-emoji">🔒🌸</div>
+    <h1>私人 NAI 画廊</h1>
+    <p id="loginMsg" class="muted">用 Discord 登录后才能查看 · 仅你自己可见</p>
+    <button id="loginBtn" class="btn-dc">🔑 用 Discord 登录</button>
+    <p class="lw-note">数据仅你本人可看。手机 / 电脑都能登。</p>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="brand">🌸 我的 NAI 画廊</div>
+  <nav class="tabs">
+    <button data-view="gallery" class="tab active">🎨 画廊</button>
+    <button data-view="gaca" class="tab">🔮 抽卡</button>
+    <button data-view="vibe" class="tab">🎴 Vibe</button>
+    <button data-view="manage" class="tab admin-only" id="manageTab" style="display:none">🔐 管理</button>
+  </nav>
+  <div id="userChip" class="user-chip hidden"></div>
+  <div class="stat" id="stat"></div>
+</header>
+
+<main>
+  <!-- 画廊 -->
+  <section id="view-gallery" class="view">
+    <div class="filters">
+      <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
+      <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
+      <select id="fBatch" class="f-sel"><option value="">全部批次</option></select>
+      <select id="fSort" class="f-sel">
+        <option value="new">最新优先</option>
+        <option value="old">最早优先</option>
+        <option value="artist">按画师</option>
+      </select>
+      <label class="hideToggle" id="hideToggleWrap" style="display:none"><input type="checkbox" id="showHidden"> 显示被隐藏的</label>
+    </div>
+    <div id="grid" class="grid"></div>
+    <div id="sentinel" class="sentinel">向下滚动加载更多…</div>
+    <div id="empty" class="empty hidden">没有匹配的画作 🥲</div>
+  </section>
+
+  <!-- 抽卡 / 塔罗 -->
+  <section id="view-gaca" class="view hidden">
+    <div class="gaca-controls">
+      <button id="draw1" class="btn-primary">🎴 抽一张</button>
+      <button id="draw3" class="btn-primary">🔮 塔罗三张</button>
+      <button id="drawReset" class="btn-ghost">清空</button>
+    </div>
+    <div id="gacaStage" class="gaca-stage"></div>
+    <p class="muted center">从已解锁的画作里随机抽一张，翻牌看看今天画了啥 ✨</p>
+  </section>
+
+  <!-- Vibe -->
+  <section id="view-vibe" class="view hidden">
+    <div id="vibeGrid" class="grid vibe-grid"></div>
+  </section>
+
+  <!-- 管理 -->
+  <section id="view-manage" class="view hidden">
+    <p class="muted">管理模式下，点画廊里的图可 <strong>隐藏 / 取消隐藏</strong>（仅存你本机浏览器，不影响原始数据）。隐藏后公开访客看不到这些图。</p>
+    <div id="manageHint" class="muted"></div>
+    <div id="gridManage" class="grid"></div>
+  </section>
+</main>
+
+<!-- 灯箱 -->
+<div id="lightbox" class="lightbox hidden">
+  <div class="lb-back" id="lbBack"></div>
+  <div class="lb-card">
+    <button class="lb-x" id="lbX">✕</button>
+    <img id="lbImg" class="lb-img" alt="">
+    <div class="lb-meta">
+      <div class="lb-title" id="lbTitle"></div>
+      <div class="lb-artist" id="lbArtist"></div>
+      <div class="lb-prompt">
+        <div class="lb-prompt-head"><span>Positive</span><button class="copyBtn" data-copy="lbPos">📋 复制</button></div>
+        <textarea id="lbPos" readonly rows="4"></textarea>
+      </div>
+      <div class="lb-prompt">
+        <div class="lb-prompt-head"><span>Negative</span><button class="copyBtn" data-copy="lbNeg">📋 复制</button></div>
+        <textarea id="lbNeg" readonly rows="2"></textarea>
+      </div>
+      <div class="lb-tags" id="lbTags"></div>
+      <div class="lb-nav"><button id="lbPrev">← 上一张</button><button id="lbNext">下一张 →</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 兜底：file:// 直接双击打开时由 seed.js 提供数据；HTTP 部署时 app.js 会优先 fetch data/index.json -->
+<script src="data/seed.js"></script>
+<!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
+<script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
+<script src="app.js"></script>
+</body>
+</html>
