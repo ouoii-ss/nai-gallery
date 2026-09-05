@@ -210,10 +210,6 @@
     $('#draw1').addEventListener('click', () => draw(1));
     $('#draw3').addEventListener('click', () => draw(3));
     $('#drawReset').addEventListener('click', () => { $('#gacaStage').innerHTML = ''; });
-
-    // 无限滚动
-    const io = new IntersectionObserver((ents) => { if (ents[0].isIntersecting) loadMore(); }, { rootMargin: '400px' });
-    io.observe($('#sentinel'));
   }
 
   function onTab(v) {
@@ -266,18 +262,46 @@
   }
   function resetGallery() {
     galleryPage = 0; galleryListCache = applyFilters();
-    $('#grid').innerHTML = '';
-    $('#empty').classList.toggle('hidden', galleryListCache.length > 0);
-    loadMore();
+    renderPage(); renderPager();
   }
-  function loadMore() {
+  // 渲染当前页（每页 PAGE 张），不再无限滚动
+  function renderPage() {
     const list = galleryListCache;
     const slice = list.slice(galleryPage * PAGE, (galleryPage + 1) * PAGE);
     const frag = document.createDocumentFragment();
     slice.forEach(a => frag.appendChild(artCard(a)));
-    $('#grid').appendChild(frag);
-    galleryPage++;
-    $('#sentinel').style.display = galleryPage * PAGE < list.length ? '' : 'none';
+    const grid = $('#grid');
+    grid.innerHTML = ''; grid.appendChild(frag);
+    $('#empty').classList.toggle('hidden', list.length > 0);
+  }
+  // 翻页控件：上一页 / 页码窗口 / 下一页 + 计数
+  function renderPager() {
+    const pager = $('#pager'); if (!pager) return;
+    const total = galleryListCache.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE));
+    const cur = galleryPage;
+    if (pages <= 1) { pager.innerHTML = ''; return; }
+    let html = `<button class="pg${cur <= 0 ? ' disabled' : ''}" data-pg="${cur - 1}">‹ 上一页</button>`;
+    const win = 2; const nums = [];
+    for (let i = 0; i < pages; i++) if (i === 0 || i === pages - 1 || Math.abs(i - cur) <= win) nums.push(i);
+    let last = -1;
+    for (const i of nums) {
+      if (i - last > 1) html += `<span class="pg-gap">…</span>`;
+      html += `<button class="pg num${i === cur ? ' active' : ''}" data-pg="${i}">${i + 1}</button>`;
+      last = i;
+    }
+    html += `<button class="pg${cur >= pages - 1 ? ' disabled' : ''}" data-pg="${cur + 1}">下一页 ›</button>`;
+    html += `<span class="pg-info">${total} 张 · 第 ${cur + 1}/${pages} 页</span>`;
+    pager.innerHTML = html;
+    pager.querySelectorAll('.pg[data-pg]').forEach(b => b.addEventListener('click', () => {
+      const p = +b.dataset.pg; if (p < 0 || p >= pages) return; navPage(p);
+    }));
+  }
+  function navPage(p) {
+    const pages = Math.max(1, Math.ceil(galleryListCache.length / PAGE));
+    galleryPage = Math.max(0, Math.min(p, pages - 1));
+    renderPage(); renderPager();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function artCard(a) {
     const d = document.createElement('div');
