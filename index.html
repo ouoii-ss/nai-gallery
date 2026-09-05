@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAI 画廊 · NAI 画师串</title>
-<link rel="stylesheet" href="styles.css?v=20260905n5">
+<link rel="stylesheet" href="styles.css?v=20260905n7">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -82,14 +82,18 @@
         </div>
 
         <div class="filters">
-          <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
-          <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
-          <select id="fBatch" class="f-sel"><option value="">全部批次</option></select>
-          <select id="fSort" class="f-sel">
-            <option value="new">最新优先</option>
-            <option value="old">最早优先</option>
-            <option value="artist">按画师</option>
-          </select>
+          <div class="f-search-row">
+            <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
+          </div>
+          <div class="f-sel-row">
+            <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
+            <select id="fBatch" class="f-sel"><option value="">全部批次</option></select>
+            <select id="fSort" class="f-sel">
+              <option value="new">最新优先</option>
+              <option value="old">最早优先</option>
+              <option value="artist">按画师</option>
+            </select>
+          </div>
           <label class="hideToggle" id="hideToggleWrap" style="display:none"><input type="checkbox" id="showHidden"> 显示被隐藏的</label>
         </div>
         <div id="grid" class="grid"></div>
@@ -150,6 +154,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260905n5"></script>
+<script src="app.js?v=20260905n7"></script>
 </body>
 </html>

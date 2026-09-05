@@ -108,7 +108,7 @@ body::before {
 .window-shell {
   position: relative; z-index: 1;
   max-width: 1440px;
-  margin: 44px auto 28px;
+  margin: 56px auto 32px;
   background: var(--shell-bg);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -118,12 +118,12 @@ body::before {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100vh - 88px);
 }
 
 .traffic-lights {
   position: absolute;
-  top: 18px; left: 18px;
+  top: 28px; left: 22px;
   display: flex; gap: 8px;
   z-index: 10;
 }
@@ -140,7 +140,7 @@ body::before {
 /* 顶部胶囊切换栏 */
 .top-pills {
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  padding: 20px 24px 18px 90px;
+  padding: 32px 24px 20px 90px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%);
   position: relative;
@@ -300,6 +300,10 @@ body::before {
   margin-bottom: 6px; backdrop-filter: blur(10px); white-space: nowrap;
 }
 .user-pill:hover { background: rgba(255,255,255,0.85); transform: translateY(-1px); }
+
+/* ===== 移动端抽屉开关：桌面默认隐藏 ===== */
+.nav-toggle { display: none; }
+.nav-backdrop { display: none; }
 .user-pill .theme-ico { font-size: 12px; }
 .stat-line { margin: 3px 0; white-space: nowrap; }
 .stat-line b { color: var(--berry); }
@@ -329,10 +333,12 @@ body::before {
 .center { text-align: center; }
 .hidden { display: none !important; }
 
-/* ===== 筛选 ===== */
-.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 24px; }
+/* ===== 筛选：搜框永远独占一行，3 个 select 共享下一行 ===== */
+.filters { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 24px; }
+.filters .f-search-row { display: flex; gap: 10px; }
+.filters .f-sel-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .f-search {
-  flex: 1 1 280px; min-width: 200px; padding: 12px 18px;
+  flex: 1 1 auto; min-width: 0; padding: 12px 18px;
   border: 1px solid rgba(255,255,255,0.6); border-radius: 999px;
   background: rgba(255,255,255,0.55); font-size: 14px; color: var(--ink);
   outline: none; backdrop-filter: blur(10px);
@@ -341,7 +347,8 @@ body::before {
 .f-search::placeholder { color: var(--ink-3); font-style: italic; }
 .f-search:focus { border-color: var(--pink-2); background: rgba(255,255,255,0.85); box-shadow: 0 0 0 3px rgba(143,155,134,0.22); }
 .f-sel {
-  padding: 12px 16px; border: 1px solid rgba(255,255,255,0.6); border-radius: 999px;
+  flex: 1 1 0; min-width: 110px; padding: 12px 16px;
+  border: 1px solid rgba(255,255,255,0.6); border-radius: 999px;
   background: rgba(255,255,255,0.55); font-size: 14px; color: var(--ink);
   outline: none; cursor: pointer; backdrop-filter: blur(10px); transition: border-color .15s;
 }
@@ -538,8 +545,10 @@ body::before {
   .user-chip { top: 12px; right: 12px; padding: 4px 10px 4px 6px; }
 
   .filters { gap: 8px; margin: 10px 0 18px; }
-  .f-search { flex: 1 1 100%; min-width: 0; padding: 11px 15px; font-size: 14px; }
-  .f-sel { flex: 1 1 auto; min-width: 0; padding: 10px 11px; font-size: 13px; }
+  .f-search-row { gap: 8px; }
+  .f-sel-row { gap: 8px; }
+  .f-search { padding: 11px 15px; font-size: 14px; }
+  .f-sel { min-width: 90px; padding: 10px 11px; font-size: 13px; }
   .hideToggle { font-size: 12px; }
 
   .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
