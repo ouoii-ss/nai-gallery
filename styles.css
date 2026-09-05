@@ -59,6 +59,16 @@ main{padding:18px; max-width:1400px; margin:0 auto}
 .f-sel{padding:10px 12px; border:2px solid var(--line); border-radius:12px; background:#fff; font-size:14px; color:var(--ink); outline:none}
 .hideToggle{font-size:13px; color:var(--berry); display:flex; align-items:center; gap:5px; cursor:pointer}
 
+/* 分类筛选栏 */
+.cat-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.cat-chip{
+  border:0; cursor:pointer; padding:7px 14px; border-radius:999px; font-size:13px; font-weight:700;
+  background:#fff; color:var(--berry); border:2px solid var(--line); transition:.15s; white-space:nowrap;
+}
+.cat-chip:hover{background:var(--pink-3)}
+.cat-chip.active{background:var(--berry); color:#fff; border-color:var(--berry); box-shadow:0 3px 10px rgba(179,48,107,.25)}
+.cat-chip .cn{font-size:11px; opacity:.7; margin-left:2px}
+
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px}
 .vibe-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .card{
@@ -139,6 +149,8 @@ main{padding:18px; max-width:1400px; margin:0 auto}
   .f-search{flex:1 1 100%; min-width:0; padding:9px 12px; font-size:14px}
   .f-sel{flex:1 1 auto; min-width:0; padding:9px 8px; font-size:13px}
   .hideToggle{font-size:12px}
+  .cat-bar{gap:6px; margin-bottom:10px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch}
+  .cat-chip{flex:0 0 auto; padding:6px 11px; font-size:12px}
 
   /* 画廊 / Vibe 三列 */
   .grid{grid-template-columns:repeat(3,1fr); gap:8px}

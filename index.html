@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>🌸 我的 NAI 画廊</title>
-<link rel="stylesheet" href="styles.css?v=20260904a">
+<link rel="stylesheet" href="styles.css?v=20260905a">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -33,6 +33,7 @@
 <main>
   <!-- 画廊 -->
   <section id="view-gallery" class="view">
+    <div id="catBar" class="cat-bar"></div>
     <div class="filters">
       <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
       <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
@@ -107,6 +108,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260904a"></script>
+<script src="app.js?v=20260905a"></script>
 </body>
 </html>
