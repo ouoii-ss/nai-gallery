@@ -3,7 +3,7 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260905n5';
+  const APP_VER = '20260905n9';
   console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏无浏览/无管理');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -310,8 +310,10 @@
     const d = document.createElement('div');
     d.className = 'card';
     d.innerHTML = `
-      ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
-      <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
+      <div class="c-img-wrap">
+        ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
+        <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
+      </div>
       <div class="c-body">
         <div class="c-title">${esc(a.title || '无题')}</div>
         <div class="c-artist">${esc(a.artist || '未知画师')}</div>
@@ -433,7 +435,9 @@
       d.className = 'card vibe-card';
       const img = v.thumbnail || '';
       d.innerHTML = `
-        ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="this.style.background='#e9e6e1';this.remove()">` : `<img src="" alt="" style="background:#e9e6e1">`}
+        <div class="c-img-wrap">
+          ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="this.style.background='#e9e6e1';this.remove()">` : `<img src="" alt="" style="background:#e9e6e1">`}
+        </div>
         <div class="c-body">
           <div class="c-title">${esc(v.name || 'Vibe')}</div>
           <div class="c-artist">${esc(v.artist || (v.tags || []).join(' ') || '')}</div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAI 画廊 · NAI 画师串</title>
-<link rel="stylesheet" href="styles.css?v=20260905n7">
+<link rel="stylesheet" href="styles.css?v=20260905n9">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -58,6 +58,20 @@
           <div class="brand-logo">NAI 画廊库</div>
           <div class="brand-sub">Artist Gallery</div>
         </div>
+      </div>
+
+      <!-- 浏览导航（手机端用：顶部胶囊移到抽屉里释放顶部空间） -->
+      <div class="nav-section nav-section-mobile">
+        <h4>浏览</h4>
+        <button class="nav-link" data-view="gallery" type="button" title="画廊">
+          <span class="ico">✦</span><span class="lbl">画廊<span class="lbl-sub">Gallery</span></span>
+        </button>
+        <button class="nav-link" data-view="gaca" type="button" title="抽卡">
+          <span class="ico">✶</span><span class="lbl">抽卡<span class="lbl-sub">Gacha</span></span>
+        </button>
+        <button class="nav-link" data-view="vibe" type="button" title="Vibe 库">
+          <span class="ico">✿</span><span class="lbl">Vibe<span class="lbl-sub">Vibes</span></span>
+        </button>
       </div>
 
       <div class="sidebar-foot">
@@ -154,6 +168,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260905n7"></script>
+<script src="app.js?v=20260905n9"></script>
 </body>
 </html>
