@@ -375,7 +375,7 @@
         <div class="flip-inner">
           <div class="flip-face flip-back"><div>🔮</div><div class="hint">点我翻牌</div></div>
           <div class="flip-face flip-front">
-            <img src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='var(--pink-3)'">
+            <img src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
             <div class="f-cap">${esc(a.title || '无题')}</div>
             <div class="f-art">${esc(a.artist || '未知画师')}</div>
           </div>
@@ -395,7 +395,7 @@
       d.className = 'card vibe-card';
       const img = v.thumbnail || '';
       d.innerHTML = `
-        ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="this.style.background='var(--pink-3)';this.remove()">` : `<img src="" alt="" style="background:var(--pink-3)">`}
+        ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="this.style.background='#e9e6e1';this.remove()">` : `<img src="" alt="" style="background:#e9e6e1">`}
         <div class="c-body">
           <div class="c-title">${esc(v.name || 'Vibe')}</div>
           <div class="c-artist">${esc(v.artist || (v.tags || []).join(' ') || '')}</div>
