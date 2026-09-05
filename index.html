@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>我的 NAI 画廊</title>
-<link rel="stylesheet" href="styles.css?v=20260905e">
+<title>NAI 画廊 · NAI 画师串</title>
+<link rel="stylesheet" href="styles.css?v=20260905n2">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
 <div id="loginWall" class="login-wall hidden">
   <div class="lw-card">
-    <div class="lw-emoji">🔒🌸</div>
+    <div class="lw-emoji">🔒</div>
     <h1>私人 NAI 画廊</h1>
     <p id="loginMsg" class="muted">用 Discord 登录后才能查看 · 仅你自己可见</p>
     <button id="loginBtn" class="btn-dc">🔑 用 Discord 登录</button>
@@ -18,60 +18,120 @@
   </div>
 </div>
 
-<header class="topbar">
-  <div class="brand">我的 NAI 画廊</div>
-  <nav class="tabs">
-    <button data-view="gallery" class="tab active">画廊</button>
-    <button data-view="gaca" class="tab">抽卡</button>
-    <button data-view="vibe" class="tab">Vibe</button>
-    <button data-view="manage" class="tab admin-only" id="manageTab" style="display:none">管理</button>
-  </nav>
+<!-- NOCTURNE 风外壳：磨砂玻璃 Mac 窗口 -->
+<div class="window-shell">
+  <!-- Mac 红绿灯 -->
+  <div class="traffic-lights" aria-hidden="true">
+    <span class="traffic-light red"></span>
+    <span class="traffic-light yellow"></span>
+    <span class="traffic-light green"></span>
+  </div>
+
+  <!-- 右上角登录态 -->
   <div id="userChip" class="user-chip hidden"></div>
-  <div class="stat" id="stat"></div>
-</header>
 
-<main>
-  <!-- 画廊 -->
-  <section id="view-gallery" class="view">
-    <div class="filters">
-      <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
-      <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
-      <select id="fBatch" class="f-sel"><option value="">全部批次</option></select>
-      <select id="fSort" class="f-sel">
-        <option value="new">最新优先</option>
-        <option value="old">最早优先</option>
-        <option value="artist">按画师</option>
-      </select>
-      <label class="hideToggle" id="hideToggleWrap" style="display:none"><input type="checkbox" id="showHidden"> 显示被隐藏的</label>
+  <!-- 顶部胶囊视图切换 -->
+  <div class="top-pills" role="tablist">
+    <button class="top-pill active" data-view="gallery" type="button">
+      <span class="tp-ico">✦</span>画廊<span class="tp-sub">Gallery</span>
+    </button>
+    <button class="top-pill" data-view="gaca" type="button">
+      <span class="tp-ico">✶</span>抽卡<span class="tp-sub">Gacha</span>
+    </button>
+    <button class="top-pill" data-view="vibe" type="button">
+      <span class="tp-ico">✿</span>Vibe<span class="tp-sub">Vibes</span>
+    </button>
+    <button class="top-pill" data-view="manage" type="button">
+      <span class="tp-ico">⚙</span>管理<span class="tp-sub">Manage</span>
+    </button>
+  </div>
+
+  <!-- 手机端侧栏抽屉开关 -->
+  <button id="navToggle" class="nav-toggle" type="button" aria-label="菜单">☰</button>
+  <div id="navBackdrop" class="nav-backdrop"></div>
+
+  <div class="app">
+    <!-- 左侧栏：可折叠圆形图标 -->
+    <aside class="sidebar">
+      <button class="sidebar-pin" id="sidebarPin" type="button" title="钉住/取消钉住（点此可保持展开状态）">📌</button>
+
+      <div class="brand-wrap">
+        <div class="brand-mark">N</div>
+        <div>
+          <div class="brand-logo">NAI 画廊库</div>
+          <div class="brand-sub">Artist Gallery</div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h4>管理</h4>
+        <button class="nav-link" type="button" data-view="manage">
+          <span class="ico">⚙</span><span class="lbl">管理</span>
+        </button>
+      </div>
+
+      <div class="sidebar-foot">
+        <button class="user-pill" id="themeToggle" type="button" title="点击切换日 / 夜模式" aria-label="切换日 / 夜模式">
+          <span class="theme-ico" aria-hidden="true">◐</span>
+          <span class="theme-text">日间</span>
+        </button>
+        <div class="stat-line" id="stat"></div>
+      </div>
+    </aside>
+
+    <!-- 主区 -->
+    <div class="main">
+      <!-- 画廊 -->
+      <section id="view-gallery" class="view">
+        <!-- NOCTURNE 风大标题 hero -->
+        <div class="hero">
+          <div class="hero-eyebrow">Artist Gallery</div>
+          <h1 class="hero-title">NAI 画师串</h1>
+          <div class="hero-sub">A quiet collection of dreams</div>
+          <div class="hero-meta"><span id="heroMeta">—</span></div>
+        </div>
+
+        <div class="filters">
+          <input id="search" class="f-search" placeholder="搜索画师 / 提示词 / 标签 / 批次…">
+          <select id="fArtist" class="f-sel"><option value="">全部画师</option></select>
+          <select id="fBatch" class="f-sel"><option value="">全部批次</option></select>
+          <select id="fSort" class="f-sel">
+            <option value="new">最新优先</option>
+            <option value="old">最早优先</option>
+            <option value="artist">按画师</option>
+          </select>
+          <label class="hideToggle" id="hideToggleWrap" style="display:none"><input type="checkbox" id="showHidden"> 显示被隐藏的</label>
+        </div>
+        <div id="grid" class="grid"></div>
+        <div id="pager" class="pager"></div>
+        <div id="empty" class="empty hidden">没有匹配的画作</div>
+      </section>
+
+      <!-- 抽卡 / 塔罗 -->
+      <section id="view-gaca" class="view hidden">
+        <div class="gaca-controls">
+          <button id="draw1" class="btn-primary">✶ 抽一张</button>
+          <button id="draw3" class="btn-primary">🔮 塔罗三张</button>
+          <button id="drawReset" class="btn-ghost">清空</button>
+        </div>
+        <div id="gacaStage" class="gaca-stage"></div>
+        <p class="muted center">从已解锁的画作里随机抽一张，翻牌看看今天画了啥 ✦</p>
+      </section>
+
+      <!-- Vibe -->
+      <section id="view-vibe" class="view hidden">
+        <div id="vibeGrid" class="grid vibe-grid"></div>
+      </section>
+
+      <!-- 管理 -->
+      <section id="view-manage" class="view hidden">
+        <p class="muted">管理模式下，点画廊里的图可 <strong>隐藏 / 取消隐藏</strong>（仅存你本机浏览器，不影响原始数据）。隐藏后公开访客看不到这些图。</p>
+        <div id="manageHint" class="muted"></div>
+        <div id="gridManage" class="grid"></div>
+      </section>
     </div>
-    <div id="grid" class="grid"></div>
-    <div id="pager" class="pager"></div>
-    <div id="empty" class="empty hidden">没有匹配的画作</div>
-  </section>
-
-  <!-- 抽卡 / 塔罗 -->
-  <section id="view-gaca" class="view hidden">
-    <div class="gaca-controls">
-      <button id="draw1" class="btn-primary">🎴 抽一张</button>
-      <button id="draw3" class="btn-primary">🔮 塔罗三张</button>
-      <button id="drawReset" class="btn-ghost">清空</button>
-    </div>
-    <div id="gacaStage" class="gaca-stage"></div>
-    <p class="muted center">从已解锁的画作里随机抽一张，翻牌看看今天画了啥 ✨</p>
-  </section>
-
-  <!-- Vibe -->
-  <section id="view-vibe" class="view hidden">
-    <div id="vibeGrid" class="grid vibe-grid"></div>
-  </section>
-
-  <!-- 管理 -->
-  <section id="view-manage" class="view hidden">
-    <p class="muted">管理模式下，点画廊里的图可 <strong>隐藏 / 取消隐藏</strong>（仅存你本机浏览器，不影响原始数据）。隐藏后公开访客看不到这些图。</p>
-    <div id="manageHint" class="muted"></div>
-    <div id="gridManage" class="grid"></div>
-  </section>
-</main>
+  </div>
+</div>
 
 <!-- 灯箱 -->
 <div id="lightbox" class="lightbox hidden">
@@ -107,6 +167,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260905f"></script>
+<script src="app.js?v=20260905n2"></script>
 </body>
 </html>

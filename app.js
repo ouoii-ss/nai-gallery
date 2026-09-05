@@ -4,6 +4,8 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
+  const APP_VER = '20260905n2';
+  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏工具化');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
@@ -133,11 +135,52 @@
 
   function boot() {
     $('#stat').textContent = `${ART.length} 张画 · ${VIB.length} 个 Vibe`;
+    const _hm = $('#heroMeta');
+    if (_hm) _hm.textContent = `${ART.length} 画作 · ${VIB.length} Vibe`;
     fillSelect($('#fArtist'), [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
     if (admin) $('#manageTab').style.display = '';
+    restoreUIState();
     wire();
     switchView('gallery');
+  }
+
+  // 恢复侧栏钉住 + 日/夜模式（持久化到 localStorage）
+  function restoreUIState() {
+    const pinned = localStorage.getItem('pg_sidebar_pinned') === '1';
+    const sb = document.querySelector('.sidebar');
+    if (sb && pinned) sb.classList.add('pinned');
+    const pin = $('#sidebarPin');
+    if (pin) pin.classList.toggle('on', pinned);
+
+    const night = localStorage.getItem('pg_theme') === 'night';
+    if (night) document.documentElement.classList.add('theme-night');
+    const tt = $('#themeToggle .theme-text');
+    if (tt) tt.textContent = night ? '夜间' : '日间';
+  }
+
+  function setSidebarPinned(p) {
+    const sb = document.querySelector('.sidebar');
+    if (sb) sb.classList.toggle('pinned', p);
+    const pin = $('#sidebarPin');
+    if (pin) pin.classList.toggle('on', p);
+    localStorage.setItem('pg_sidebar_pinned', p ? '1' : '0');
+  }
+  function toggleTheme() {
+    const html = document.documentElement;
+    const night = !html.classList.contains('theme-night');
+    html.classList.toggle('theme-night', night);
+    const tt = $('#themeToggle .theme-text');
+    if (tt) tt.textContent = night ? '夜间' : '日间';
+    localStorage.setItem('pg_theme', night ? 'night' : 'day');
+  }
+  function openMobileDrawer() {
+    const sb = document.querySelector('.sidebar'); if (sb) sb.classList.add('open');
+    const bd = $('#navBackdrop'); if (bd) bd.classList.add('show');
+  }
+  function closeMobileDrawer() {
+    const sb = document.querySelector('.sidebar'); if (sb) sb.classList.remove('open');
+    const bd = $('#navBackdrop'); if (bd) bd.classList.remove('show');
   }
 
   function fillSelect(sel, items) {
@@ -148,7 +191,11 @@
   }
 
   function wire() {
-    document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => onTab(b.dataset.view)));
+    document.querySelectorAll('.top-pill, .nav-link').forEach(b => b.addEventListener('click', () => { closeMobileDrawer(); onTab(b.dataset.view); }));
+    const _pin = $('#sidebarPin'); if (_pin) _pin.addEventListener('click', () => setSidebarPinned(!document.querySelector('.sidebar').classList.contains('pinned')));
+    const _tt = $('#themeToggle'); if (_tt) _tt.addEventListener('click', toggleTheme);
+    const _nt = $('#navToggle'); if (_nt) _nt.addEventListener('click', openMobileDrawer);
+    const _bd = $('#navBackdrop'); if (_bd) _bd.addEventListener('click', closeMobileDrawer);
     $('#search').addEventListener('input', (e) => { filters.q = e.target.value.trim().toLowerCase(); resetGallery(); });
     $('#fArtist').addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
     $('#fBatch').addEventListener('change', (e) => { filters.batch = e.target.value; resetGallery(); });
@@ -189,9 +236,16 @@
     view = v;
     document.querySelectorAll('.view').forEach(s => s.classList.add('hidden'));
     $('#view-' + (v === 'gaca' ? 'gaca' : v)).classList.remove('hidden');
-    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+    syncNav(v);
     $('#hideToggleWrap').style.display = (admin && v === 'gallery') ? '' : 'none';
     if (v === 'gallery') resetGallery();
+  }
+
+  // 顶部胶囊 + 侧栏圆形图标同步 active（单一来源：当前 view）
+  function syncNav(v) {
+    document.querySelectorAll('.top-pill, .nav-link').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === v);
+    });
   }
 
   // —— 画廊 ——
