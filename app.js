@@ -335,23 +335,23 @@
     const a = document.createElement('a'); a.href = u; a.download = safeName($('#lbTitle').textContent) + '.txt';
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); toast('已下载提示词 ✓');
   }
-  // 下载 Vibe 原文件：按真实格式命名（单个 .naiv4vibe / 打包 .naiv4vibebundle），内容来自 vibes-raw/<id>.json
+  // 下载 Vibe 原文件：文件名原样还原（导入啥样导出啥样），内容来自 a.raw
   async function downloadCurrentVibe() {
     const a = lbList[lbIdx]; if (!a || !a.raw) return;
     try {
       const r = await fetch(a.raw); if (!r.ok) throw new Error('fetch ' + r.status);
       const text = await r.text();
-      // 由内容 identifier 判定真实格式：bundle → .naiv4vibebundle，否则 .naiv4vibe
+      // 由内容 identifier 判定标准格式（bundle vs 单 vibe），仅在原文件名无标准扩展名时兜底
       let ext = '.naiv4vibe';
       try { const j = JSON.parse(text); if (j && j.identifier === 'novelai-vibe-bundle') ext = '.naiv4vibebundle'; } catch (_) {}
       const orig = a.originalFilename || '';
       let name;
-      if (/\.naiv4vibebundle$/i.test(orig)) name = safeName(orig);
-      else if (/\.naiv4vibe$/i.test(orig)) name = safeName(orig);
-      else {
-        // 无后缀或带 .json 的（如「折枝.naiv4vibe.json」）：去掉已知后缀后按内容补正确扩展名
-        const base = orig.replace(/(\.naiv4vibe|\.naiv4vibebundle|\.json)+$/i, '') || (a.title || 'vibe');
-        name = safeName(base + ext);
+      if (orig) {
+        // bundle 文件名套到单个 vibe 上 NAI 打不开 → 降级为 NAI 名 + 标准单文件扩展名
+        if (/\.naiv4vibebundle/i.test(orig)) name = safeName(a.title || 'vibe') + '.naiv4vibe';
+        else name = orig;   // 原样：导入叫 xxx.json，下载就叫 xxx.json
+      } else {
+        name = safeName(a.title || 'vibe') + ext;   // 无原始文件名（粘贴/手工）兜底
       }
       const b = new Blob([text], { type: 'application/json;charset=utf-8' });
       const u = URL.createObjectURL(b);
