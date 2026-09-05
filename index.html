@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAI 画廊 · NAI 画师串</title>
-<link rel="stylesheet" href="styles.css?v=20260905n4">
+<link rel="stylesheet" href="styles.css?v=20260905n5">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -41,9 +41,6 @@
     <button class="top-pill" data-view="vibe" type="button">
       <span class="tp-ico">✿</span>Vibe<span class="tp-sub">Vibes</span>
     </button>
-    <button class="top-pill" data-view="manage" type="button">
-      <span class="tp-ico">⚙</span>管理<span class="tp-sub">Manage</span>
-    </button>
   </div>
 
   <!-- 手机端侧栏抽屉开关 -->
@@ -61,13 +58,6 @@
           <div class="brand-logo">NAI 画廊库</div>
           <div class="brand-sub">Artist Gallery</div>
         </div>
-      </div>
-
-      <div class="nav-section">
-        <h4>管理</h4>
-        <button class="nav-link" type="button" data-view="manage">
-          <span class="ico">⚙</span><span class="lbl">管理</span>
-        </button>
       </div>
 
       <div class="sidebar-foot">
@@ -122,13 +112,6 @@
       <section id="view-vibe" class="view hidden">
         <div id="vibeGrid" class="grid vibe-grid"></div>
       </section>
-
-      <!-- 管理 -->
-      <section id="view-manage" class="view hidden">
-        <p class="muted">管理模式下，点画廊里的图可 <strong>隐藏 / 取消隐藏</strong>（仅存你本机浏览器，不影响原始数据）。隐藏后公开访客看不到这些图。</p>
-        <div id="manageHint" class="muted"></div>
-        <div id="gridManage" class="grid"></div>
-      </section>
     </div>
   </div>
 </div>
@@ -167,6 +150,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260905n4"></script>
+<script src="app.js?v=20260905n5"></script>
 </body>
 </html>

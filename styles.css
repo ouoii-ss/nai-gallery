@@ -108,7 +108,7 @@ body::before {
 .window-shell {
   position: relative; z-index: 1;
   max-width: 1440px;
-  margin: 24px auto;
+  margin: 44px auto 28px;
   background: var(--shell-bg);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -118,7 +118,7 @@ body::before {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 72px);
 }
 
 .traffic-lights {
@@ -139,8 +139,8 @@ body::before {
 
 /* 顶部胶囊切换栏 */
 .top-pills {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 16px 24px 16px 90px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 20px 24px 18px 90px;
   border-bottom: 1px solid var(--line-soft);
   background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%);
   position: relative;
@@ -504,9 +504,9 @@ body::before {
 
 /* ===== 手机适配（≤760px）：三列 + 顶栏换行 + 灯箱竖排 + 侧栏抽屉 ===== */
 @media (max-width: 760px) {
-  .window-shell { margin: 12px auto; border-radius: 22px; min-height: calc(100vh - 24px); }
-  .top-pills { padding: 12px 16px 12px 70px; gap: 6px; flex-wrap: wrap; }
-  .top-pill { flex: 1 1 0; justify-content: center; padding: 9px 6px; font-size: 12px; }
+  .window-shell { margin: 18px auto 14px; border-radius: 22px; min-height: calc(100vh - 32px); }
+  .top-pills { padding: 18px 14px 16px 60px; gap: 8px; flex-wrap: wrap; }
+  .top-pill { flex: 1 1 0; justify-content: center; padding: 10px 8px; font-size: 12px; }
 
   /* 侧栏改为抽屉：默认收起、点导航开关滑出 */
   .app { position: relative; }

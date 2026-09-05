@@ -1,11 +1,10 @@
 (function () {
   'use strict';
-  const ADMIN_PASS = 'nai';           // 管理口令（本地策展用，改这里即可）
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260905n2';
-  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏工具化');
+  const APP_VER = '20260905n5';
+  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏无浏览/无管理');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
@@ -16,9 +15,6 @@
 
   let galleryPage = 0, galleryListCache = [];
   let lbList = [], lbIdx = 0;
-  const hidden = new Set(JSON.parse(localStorage.getItem('pg_hidden') || '[]'));
-  let admin = localStorage.getItem('pg_admin') === '1';
-  let showHidden = false;
 
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -139,7 +135,6 @@
     if (_hm) _hm.textContent = `${ART.length} 画作 · ${VIB.length} Vibe`;
     fillSelect($('#fArtist'), [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
-    if (admin) $('#manageTab').style.display = '';
     restoreUIState();
     wire();
     switchView('gallery');
@@ -200,7 +195,6 @@
     $('#fArtist').addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
     $('#fBatch').addEventListener('change', (e) => { filters.batch = e.target.value; resetGallery(); });
     $('#fSort').addEventListener('change', (e) => { filters.sort = e.target.value; resetGallery(); });
-    $('#showHidden').addEventListener('change', (e) => { showHidden = e.target.checked; resetGallery(); if (view === 'manage') renderManage(); });
 
     // 灯箱
     $('#lbX').addEventListener('click', closeLightbox);
@@ -220,14 +214,6 @@
   }
 
   function onTab(v) {
-    if (v === 'manage') {
-      if (!admin) {
-        const p = prompt('管理口令（本地策展用）：');
-        if (p === ADMIN_PASS) { admin = true; localStorage.setItem('pg_admin', '1'); $('#manageTab').style.display = ''; }
-        else if (p !== null) { toast('口令不对'); return; }
-      }
-      switchView('manage'); renderManage(); return;
-    }
     switchView(v);
     if (v === 'vibe') renderVibe();
   }
@@ -237,7 +223,6 @@
     document.querySelectorAll('.view').forEach(s => s.classList.add('hidden'));
     $('#view-' + (v === 'gaca' ? 'gaca' : v)).classList.remove('hidden');
     syncNav(v);
-    $('#hideToggleWrap').style.display = (admin && v === 'gallery') ? '' : 'none';
     if (v === 'gallery') resetGallery();
   }
 
@@ -250,7 +235,7 @@
 
   // —— 画廊 ——
   function visibleArt() {
-    return ART.filter(a => showHidden || !hidden.has(a.id));
+    return ART;
   }
   function applyFilters() {
     let list = visibleArt();
@@ -323,7 +308,7 @@
   }
   function artCard(a) {
     const d = document.createElement('div');
-    d.className = 'card' + (hidden.has(a.id) ? ' hidden-mark' : '');
+    d.className = 'card';
     d.innerHTML = `
       ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
       <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
@@ -332,7 +317,6 @@
         <div class="c-artist">${esc(a.artist || '未知画师')}</div>
       </div>`;
     d.addEventListener('click', () => {
-      if (admin && view === 'manage') { toggleHidden(a.id); return; }
       openLightbox(galleryListCache, galleryListCache.indexOf(a));
     });
     return d;
@@ -462,23 +446,6 @@
   function openVibe(v) {
     const a = { id: v.id, title: v.name, artist: v.artist || '', positive: v.positive || '', negative: v.negative || '', tags: v.tags || [], thumb: v.thumbnail, full: v.thumbnail, batch: v.batch || '', raw: v.raw ? normPath(v.raw) : '', originalFilename: v.originalFilename || '' };
     lbList = [a]; lbIdx = 0; renderLb(); $('#lightbox').classList.remove('hidden');
-  }
-
-  // —— 管理（本地策展：隐藏/取消隐藏）——
-  function toggleHidden(id) {
-    if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
-    localStorage.setItem('pg_hidden', JSON.stringify([...hidden]));
-    renderManage();
-    if (view === 'gallery') resetGallery();
-    toast(hidden.has(id) ? '已隐藏（仅本机）' : '已取消隐藏');
-  }
-  function renderManage() {
-    const grid = $('#gridManage'); grid.innerHTML = '';
-    const list = showHidden ? ART : ART.filter(a => !hidden.has(a.id));
-    const hiddenCount = hidden.size;
-    $('#manageHint').textContent = `当前已隐藏 ${hiddenCount} 张（仅本机浏览器，公开访客看不到）。点图切换隐藏状态。`;
-    list.forEach(a => grid.appendChild(artCard(a)));
-    $('#empty').classList.add('hidden');
   }
 
   init();
