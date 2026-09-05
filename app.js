@@ -3,53 +3,15 @@
   const ADMIN_PASS = 'nai';           // 管理口令（本地策展用，改这里即可）
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
-  const PAGE = 48;
+  const PAGE = 24;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
 
   let ART = [], VIB = [];
   let view = 'gallery';
-  const filters = { q: '', artist: '', batch: '', sort: 'new', cat: '' };
+  const filters = { q: '', artist: '', batch: '', sort: 'new' };
 
-  // —— 自动分类（扫 prompt 标签，不写回数据，随图自动更新）——
-  const CATS = [
-    { key: '古风', kw: ['hanfu', '汉服', '古风', '水墨', 'xianxia', 'wuxia', 'tang dynasty', 'song dynasty', 'ming dynasty', 'qing dynasty', 'ancient chinese', 'chinese painting', 'chinese clothing', 'han dynasty', 'guofeng', '国风', 'traditional chinese'] },
-    { key: '可爱', kw: ['cute', 'kawaii', '可爱', '萌', 'loli', '萝莉', 'adorable', 'smile', 'cheerful', 'happy', 'chubby', 'plush', 'doll'] },
-    { key: '现代', kw: ['modern', 'casual', '现代', '日常', 'school uniform', '校服', 'city', 'street', 'contemporary', 'hoodie', 't-shirt', 't shirt', 'jeans', 'everyday', 'urban', '都市', '便服', 'casual clothes'] },
-    { key: '暗黑·红底', kw: ['gothic', '哥特', 'horror', 'blood', '血', 'vampire', 'dark', '暗黑', 'creepy', 'eerie', '红底', 'red background', 'scar', 'wound'] },
-    { key: '帅哥·男性', kw: ['1boy', '1man', 'male', '帅哥', 'handsome', 'boy', 'man', '男性', 'gentleman'] },
-    { key: '兽耳·动物娘', kw: ['cat ears', 'fox ears', 'animal ears', 'nekomimi', 'dog ears', 'rabbit ears', 'wolf ears', 'bunny ears', '兽耳', 'catgirl', 'kemonomimi'] },
-    { key: '清凉·泳装', kw: ['swimsuit', 'bikini', 'beach', '泳装', '比基尼', 'wet', 'barefoot', 'summer'] },
-    { key: '战斗·武装', kw: ['armor', 'sword', 'weapon', 'mecha', 'knight', 'gun', '剑', '武装', 'warrior', 'fight', 'battle'] },
-  ];
-  // 一张图可命中多个分类（重叠图在多个类里都出现）
-  function catOf(a) {
-    const t = [a.positive, Array.isArray(a.tags) ? a.tags.join(',') : a.tags, a.title, a.batch].filter(Boolean).join(' ').toLowerCase();
-    const out = [];
-    for (const c of CATS) if (c.kw.some(k => t.includes(k.toLowerCase()))) out.push(c.key);
-    return out;
-  }
-  function renderCatBar() {
-    const bar = $('#catBar');
-    if (!bar) return;
-    const counts = {}; let other = 0;
-    for (const a of ART) {
-      if (!a.__cats || a.__cats.size === 0) { other++; continue; }
-      a.__cats.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
-    }
-    const chips = [{ key: '', label: '全部' }];
-    CATS.forEach(c => chips.push({ key: c.key, label: c.key, n: counts[c.key] || 0 }));
-    chips.push({ key: '__other', label: '其他', n: other });
-    bar.innerHTML = chips.map(ch =>
-      `<button class="cat-chip${filters.cat === ch.key ? ' active' : ''}" data-cat="${esc(ch.key)}">${esc(ch.label)}${ch.n != null ? ` <span class="cn">${ch.n}</span>` : ''}</button>`
-    ).join('');
-    bar.querySelectorAll('.cat-chip').forEach(b => b.addEventListener('click', () => {
-      const k = b.dataset.cat;
-      filters.cat = (filters.cat === k) ? '' : k;   // 点同一个=取消，回全部
-      renderCatBar(); resetGallery();
-    }));
-  }
   let galleryPage = 0, galleryListCache = [];
   let lbList = [], lbIdx = 0;
   const hidden = new Set(JSON.parse(localStorage.getItem('pg_hidden') || '[]'));
@@ -171,8 +133,6 @@
 
   function boot() {
     $('#stat').textContent = `${ART.length} 张画 · ${VIB.length} 个 Vibe`;
-    ART.forEach(a => { a.__cats = new Set(catOf(a)); });   // 预计算分类，避免每次渲染重扫
-    renderCatBar();
     fillSelect($('#fArtist'), [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
     if (admin) $('#manageTab').style.display = '';
@@ -249,10 +209,6 @@
         return hay.includes(q);
       });
     }
-    if (filters.cat) {
-      if (filters.cat === '__other') list = list.filter(a => !a.__cats || a.__cats.size === 0);
-      else list = list.filter(a => a.__cats && a.__cats.has(filters.cat));
-    }
     list.sort((a, b) => {
       if (filters.sort === 'artist') return (a.artist || '').localeCompare(b.artist || '') || (b.createdAt || 0) - (a.createdAt || 0);
       if (filters.sort === 'old') return (a.createdAt || 0) - (b.createdAt || 0);
@@ -292,10 +248,18 @@
     }
     html += `<button class="pg${cur >= pages - 1 ? ' disabled' : ''}" data-pg="${cur + 1}">下一页 ›</button>`;
     html += `<span class="pg-info">${total} 张 · 第 ${cur + 1}/${pages} 页</span>`;
+    html += `<span class="pg-jump">跳至 <input id="pgJump" class="pg-input" type="number" min="1" max="${pages}" value="${cur + 1}"> 页 <button class="pg-jump-btn" id="pgJumpBtn">前往</button></span>`;
     pager.innerHTML = html;
     pager.querySelectorAll('.pg[data-pg]').forEach(b => b.addEventListener('click', () => {
       const p = +b.dataset.pg; if (p < 0 || p >= pages) return; navPage(p);
     }));
+    const jump = () => {
+      const v = parseInt($('#pgJump').value, 10);
+      if (isNaN(v) || v < 1 || v > pages) { toast('请输入 1 ~ ' + pages + ' 之间的页码'); return; }
+      navPage(v - 1);
+    };
+    $('#pgJumpBtn').addEventListener('click', jump);
+    $('#pgJump').addEventListener('keydown', (e) => { if (e.key === 'Enter') jump(); });
   }
   function navPage(p) {
     const pages = Math.max(1, Math.ceil(galleryListCache.length / PAGE));
@@ -308,7 +272,7 @@
     d.className = 'card' + (hidden.has(a.id) ? ' hidden-mark' : '');
     d.innerHTML = `
       ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
-      <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='var(--pink-3)'">
+      <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
       <div class="c-body">
         <div class="c-title">${esc(a.title || '无题')}</div>
         <div class="c-artist">${esc(a.artist || '未知画师')}</div>
