@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAI 画廊 · NAI 画师串</title>
-<link rel="stylesheet" href="styles.css?v=20260905n9">
+<link rel="stylesheet" href="styles.css?v=20260906p1">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -71,6 +71,17 @@
         </button>
         <button class="nav-link" data-view="vibe" type="button" title="Vibe 库">
           <span class="ico">✿</span><span class="lbl">Vibe<span class="lbl-sub">Vibes</span></span>
+        </button>
+      </div>
+
+      <!-- 浏览分类：画师词 / 提示词（按每张画作正面提示词里的 artist: 标记区分，不碰 artist 字段） -->
+      <div class="nav-section browse">
+        <h4>分类</h4>
+        <button class="nav-link browse-btn" id="streamsBtn" type="button" title="只看正面提示词含 artist: 标记（画师词）的画作；再点一次取消">
+          <span class="ico">❀</span><span class="lbl">画师词<span class="cnt" id="streamsCount">0</span></span>
+        </button>
+        <button class="nav-link browse-btn" id="promptsBtn" type="button" title="只看无 artist: 标记的纯提示词画作；再点一次取消">
+          <span class="ico">✦</span><span class="lbl">提示词<span class="cnt" id="promptsCount">0</span></span>
         </button>
       </div>
 
@@ -168,6 +179,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260905n9"></script>
+<script src="app.js?v=20260906p1"></script>
 </body>
 </html>

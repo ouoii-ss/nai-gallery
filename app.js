@@ -3,15 +3,21 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260905n9';
-  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏无浏览/无管理');
+  const APP_VER = '20260906p1';
+  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
 
+  // 画师词 / 提示词 的唯一判定：正面提示词里有没有 artist: 标记（artist: xxx 或 2.5::artist xxx）
+  // —— 不读 artwork.artist 字段，绝不改写用户数据。
+  function hasArtistMarker(p) {
+    return /(?:\d*\.?\d*\s*::\s*artist)|(?:\bartist\s*[:：=])/i.test(p || '');
+  }
+
   let ART = [], VIB = [];
   let view = 'gallery';
-  const filters = { q: '', artist: '', batch: '', sort: 'new' };
+  const filters = { q: '', artist: '', batch: '', sort: 'new', cat: '' };  // cat: '' | 'streams'(画师词) | 'prompts'(提示词)
 
   let galleryPage = 0, galleryListCache = [];
   let lbList = [], lbIdx = 0;
@@ -135,6 +141,7 @@
     if (_hm) _hm.textContent = `${ART.length} 画作 · ${VIB.length} Vibe`;
     fillSelect($('#fArtist'), [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
+    updateSidebarCats();   // 侧栏画师词 / 提示词 计数
     restoreUIState();
     wire();
     switchView('gallery');
@@ -186,7 +193,7 @@
   }
 
   function wire() {
-    document.querySelectorAll('.top-pill, .nav-link').forEach(b => b.addEventListener('click', () => { closeMobileDrawer(); onTab(b.dataset.view); }));
+    document.querySelectorAll('.top-pill, .nav-link').forEach(b => b.addEventListener('click', () => { if (!b.dataset || !b.dataset.view) return; closeMobileDrawer(); onTab(b.dataset.view); }));
     const _pin = $('#sidebarPin'); if (_pin) _pin.addEventListener('click', () => setSidebarPinned(!document.querySelector('.sidebar').classList.contains('pinned')));
     const _tt = $('#themeToggle'); if (_tt) _tt.addEventListener('click', toggleTheme);
     const _nt = $('#navToggle'); if (_nt) _nt.addEventListener('click', openMobileDrawer);
@@ -195,6 +202,9 @@
     $('#fArtist').addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
     $('#fBatch').addEventListener('change', (e) => { filters.batch = e.target.value; resetGallery(); });
     $('#fSort').addEventListener('change', (e) => { filters.sort = e.target.value; resetGallery(); });
+    // 侧栏分类：画师词 / 提示词
+    const _sb = $('#streamsBtn'); if (_sb) _sb.addEventListener('click', () => toggleCat('streams'));
+    const _pb = $('#promptsBtn'); if (_pb) _pb.addEventListener('click', () => toggleCat('prompts'));
 
     // 灯箱
     $('#lbX').addEventListener('click', closeLightbox);
@@ -241,6 +251,9 @@
     let list = visibleArt();
     if (filters.artist) list = list.filter(a => a.artist === filters.artist);
     if (filters.batch) list = list.filter(a => a.batch === filters.batch);
+    // 侧栏分类：画师词=正面提示词含 artist: 标记；提示词=不含
+    if (filters.cat === 'streams') list = list.filter(a => hasArtistMarker(a.positive));
+    else if (filters.cat === 'prompts') list = list.filter(a => !hasArtistMarker(a.positive));
     if (filters.q) {
       const q = filters.q;
       list = list.filter(a => {
@@ -254,6 +267,24 @@
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
     return list;
+  }
+  // 侧栏画师词 / 提示词 分类：切换过滤 + 刷新计数与高亮
+  function toggleCat(c) {
+    filters.cat = (filters.cat === c) ? '' : c;
+    if (view !== 'gallery') switchView('gallery');   // 切到画廊并自动 resetGallery
+    else resetGallery();
+    updateSidebarCats();
+  }
+  function updateSidebarCats() {
+    let streamsN = 0;
+    for (const a of ART) if (hasArtistMarker(a.positive)) streamsN++;
+    const promptsN = ART.length - streamsN;
+    const sc = $('#streamsCount'), pc = $('#promptsCount');
+    if (sc) sc.textContent = streamsN;
+    if (pc) pc.textContent = promptsN;
+    const sb = $('#streamsBtn'), pb = $('#promptsBtn');
+    if (sb) sb.classList.toggle('active', filters.cat === 'streams');
+    if (pb) pb.classList.toggle('active', filters.cat === 'prompts');
   }
   function resetGallery() {
     galleryPage = 0; galleryListCache = applyFilters();
