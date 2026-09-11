@@ -3,16 +3,38 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260906p1';
+  const APP_VER = '20260911p2';
   console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
 
-  // 画师词 / 提示词 的唯一判定：正面提示词里有没有 artist: 标记（artist: xxx 或 2.5::artist xxx）
-  // —— 不读 artwork.artist 字段，绝不改写用户数据。
+  // 画师词 / 提示词 的唯一判定：正面提示词里有没有画师标记
+  // ① 显式 artist 关键字（V4 及以前）：artist: xxx / n::artist xxx::
+  // ② V5 新格式：正面提示词开头就是权重条目 n::名字::（画师串习惯放最前面）
+  // —— 不读 artwork.artist 字段，绝不改写用户数据。与主站 n14 同口径。
+  const ARTISTLIKE_STOP = new Set([
+    'masterpiece', 'best quality', 'amazing quality', 'good quality', 'normal quality', 'high quality', 'low quality',
+    'very aesthetic', 'aesthetic', 'absurdres', 'highres', 'no text', 'official art', 'recent', 'newest',
+    'chibi', 'chibi only', 'flat color', 'simple background', 'highly detailed', 'sharp focus',
+    'light skin', 'pale skin', 'looking at viewer', 'depth of field', 'blushing', 'cowboy shot',
+    'low saturation', 'low angle', 'white dragon', 'oriental dragon', 'wet hair', 'year 2024', 'year 2025',
+    'year2024', 'year2025',
+  ]);
+  function looksLikeArtistName(inner) {
+    const s = String(inner || '').trim();
+    if (!s || s.length > 60) return false;
+    if (/[,，\n]/.test(s)) return false;            // 含逗号 = 一串描述标签，不是画师
+    if (ARTISTLIKE_STOP.has(s.toLowerCase())) return false;
+    // 名字字符集：字母/数字/下划线/空格/括号/点/横线/撇号（如 jiemo_tuoxie、izumi 087、rizu (rizunm)）
+    return /^[A-Za-z0-9_ ()\-.'\u2019]+$/.test(s);
+  }
   function hasArtistMarker(p) {
-    return /(?:\d*\.?\d*\s*::\s*artist)|(?:\bartist\s*[:：=])/i.test(p || '');
+    const s = String(p || '');
+    if (/(?:\d*\.?\d*\s*::\s*artist)|(?:\bartist\s*[:：=])/i.test(s)) return true;
+    const m = s.match(/^\s*-?\d+(?:\.\d+)?\s*::\s*([^:\n]+?)\s*::/);
+    if (m && looksLikeArtistName(m[1])) return true;
+    return false;
   }
 
   let ART = [], VIB = [];
