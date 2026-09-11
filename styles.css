@@ -104,21 +104,23 @@ body::before {
   z-index: 0;
 }
 
-/* ====== 外壳：磨砂玻璃 Mac 窗口 ====== */
+/* ====== 外壳：磨砂玻璃，全屏铺满（与主站 n11 一致）====== */
 .window-shell {
   position: relative; z-index: 1;
-  max-width: 1440px;
-  margin: 56px auto 32px;
+  width: 100%;
+  max-width: none;
+  max-height: 100vh;
+  margin: 0;
   background: var(--shell-bg);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid var(--shell-border);
-  border-radius: var(--r-shell);
-  box-shadow: var(--shell-shadow);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 88px);
+  min-height: 100vh;
 }
 
 .traffic-lights {
@@ -197,7 +199,7 @@ body::before {
 /* ====== 侧栏：可折叠圆形图标 ====== */
 .sidebar {
   position: relative;
-  width: var(--side-w-collapsed);
+  width: var(--side-w-expanded); /* 常驻展开（与主站 n12 一致） */
   padding: 18px 12px 22px;
   background: rgba(247, 245, 240, 0.30);
   backdrop-filter: blur(20px);
@@ -221,7 +223,7 @@ body::before {
   cursor: pointer; opacity: 0;
   transition: opacity .2s, background .2s, color .2s;
 }
-.sidebar:hover .sidebar-pin, .sidebar.pinned .sidebar-pin { opacity: 1; }
+.sidebar .sidebar-pin { opacity: 1; }
 .sidebar-pin:hover { background: var(--pink-2); color: #fff; }
 
 .brand-wrap {
@@ -232,15 +234,14 @@ body::before {
 }
 .brand-logo {
   font-size: 13px; font-weight: 700; color: var(--berry);
-  letter-spacing: 1px; white-space: nowrap; opacity: 0; transition: opacity .25s;
+  letter-spacing: 1px; white-space: nowrap; opacity: 1; transition: opacity .25s;
 }
-.sidebar:hover .brand-logo, .sidebar.pinned .brand-logo { opacity: 1; }
 .brand-sub {
   font-family: var(--font-serif); font-style: italic;
   font-size: 11px; color: var(--ink-3); letter-spacing: 1px;
   white-space: nowrap; opacity: 0; transition: opacity .25s;
 }
-.sidebar:hover .brand-sub, .sidebar.pinned .brand-sub { opacity: 1; }
+.sidebar .brand-sub { opacity: 1; }
 .brand-mark {
   width: 36px; height: 36px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -257,7 +258,7 @@ body::before {
   letter-spacing: 3px; text-transform: uppercase;
   white-space: nowrap; opacity: 0; transition: opacity .25s;
 }
-.sidebar:hover .nav-section h4, .sidebar.pinned .nav-section h4 { opacity: 1; }
+.sidebar .nav-section h4 { opacity: 1; }
 
 .nav-link {
   display: flex; align-items: center; gap: 12px;
@@ -276,8 +277,7 @@ body::before {
   box-shadow: var(--shadow-sm), var(--shadow-inset);
   transition: background .2s, color .2s, transform .15s;
 }
-.nav-link .lbl { font-size: 13px; opacity: 0; transition: opacity .25s; }
-.sidebar:hover .nav-link .lbl, .sidebar.pinned .nav-link .lbl { opacity: 1; }
+.nav-link .lbl { font-size: 13px; opacity: 1; transition: opacity .25s; }
 .nav-link:hover { background: rgba(255,255,255,0.45); color: var(--ink); transform: translateX(2px); }
 .nav-link:hover .ico { background: rgba(255,255,255,0.85); transform: scale(1.05); }
 .nav-link.active { background: rgba(255,255,255,0.65); color: var(--berry); font-weight: 700; }
@@ -539,7 +539,7 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
 
 /* ===== 手机适配（≤760px）：三列 + 顶栏换行 + 灯箱竖排 + 侧栏抽屉 ===== */
 @media (max-width: 760px) {
-  .window-shell { margin: 18px auto 14px; border-radius: 22px; min-height: calc(100vh - 32px); }
+  .window-shell { margin: 0; border-radius: 0; min-height: 100vh; }
   /* 手机端：顶部胶囊隐藏，浏览入口全部移入左侧抽屉 */
   .top-pills { display: none; }
   .top-pill { flex: 1 1 0; justify-content: center; padding: 10px 8px; font-size: 12px; }

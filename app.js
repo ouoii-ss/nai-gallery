@@ -3,7 +3,7 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260911p2';
+  const APP_VER = '20260911p3';
   console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
