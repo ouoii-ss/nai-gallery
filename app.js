@@ -3,7 +3,7 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260911p3';
+  const APP_VER = '20260912p4';
   console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -12,7 +12,8 @@
   // 画师词 / 提示词 的唯一判定：正面提示词里有没有画师标记
   // ① 显式 artist 关键字（V4 及以前）：artist: xxx / n::artist xxx::
   // ② V5 新格式：正面提示词开头就是权重条目 n::名字::（画师串习惯放最前面）
-  // —— 不读 artwork.artist 字段，绝不改写用户数据。与主站 n14 同口径。
+  // ③ 画师串藏在中间：V5 条目命中已知画师名库（与主站 n15 同口径）
+  // —— 不读 artwork.artist 字段，绝不改写用户数据。
   const ARTISTLIKE_STOP = new Set([
     'masterpiece', 'best quality', 'amazing quality', 'good quality', 'normal quality', 'high quality', 'low quality',
     'very aesthetic', 'aesthetic', 'absurdres', 'highres', 'no text', 'official art', 'recent', 'newest',
@@ -29,11 +30,35 @@
     // 名字字符集：字母/数字/下划线/空格/括号/点/横线/撇号（如 jiemo_tuoxie、izumi 087、rizu (rizunm)）
     return /^[A-Za-z0-9_ ()\-.'\u2019]+$/.test(s);
   }
+  // 画师名库：从全库提取（artist: 后的名字 / V5 开头条目 / artistChain 字段），最多 2 个词
+  let _artistVocab = new Set();
+  function rebuildArtistVocab() {
+    _artistVocab = new Set();
+    const isName = (t) => looksLikeArtistName(t) && t.split(/\s+/).filter(w => !/^\(?\d+\)?$/.test(w)).length <= 2;
+    for (const a of ART) {
+      const s = String(a.positive || '');
+      let m; const reKw = /\bartist\s*[:：=]\s*([a-z0-9_ .\-]{2,50}?)(?=[,，\n]|::|$)/gi;
+      while ((m = reKw.exec(s)) !== null) { const t = m[1].trim().toLowerCase(); if (isName(t)) _artistVocab.add(t); }
+      const first = s.match(/^\s*-?\d+(?:\.\d+)?\s*::\s*([^:\n]+?)\s*::/);
+      if (first && isName(first[1].trim().toLowerCase())) _artistVocab.add(first[1].trim().toLowerCase());
+      for (const seg of String(a.artistChain || '').split(/[,\n]/)) {
+        const t = seg.replace(/^[\s\d.]*::/, '').replace(/::\s*$/, '').trim().toLowerCase();
+        if (t && isName(t)) _artistVocab.add(t);
+      }
+    }
+  }
   function hasArtistMarker(p) {
     const s = String(p || '');
     if (/(?:\d*\.?\d*\s*::\s*artist)|(?:\bartist\s*[:：=])/i.test(s)) return true;
     const m = s.match(/^\s*-?\d+(?:\.\d+)?\s*::\s*([^:\n]+?)\s*::/);
     if (m && looksLikeArtistName(m[1])) return true;
+    if (!_artistVocab.size) rebuildArtistVocab();
+    const re = /-?\d+(?:\.\d+)?\s*::\s*([^:\n]+?)\s*::/g;
+    let mm;
+    while ((mm = re.exec(s)) !== null) {
+      const t = mm[1].trim().toLowerCase();
+      if (t && _artistVocab.has(t)) return true;
+    }
     return false;
   }
 
