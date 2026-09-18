@@ -392,6 +392,8 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
 }
 .card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
 .card:hover img { transform: scale(1.05); }
+/* 图片加载失败：显示提示图并允许点击重试（不缩放不裁切，文字完整可见） */
+.card img.img-broken, #lbImg.img-broken { object-fit: contain; cursor: pointer; transform: none !important; background: #f7eef1; }
 .card .c-body {
   padding: 11px 14px 13px;
   background: rgba(255,255,255,0.55); backdrop-filter: blur(10px);

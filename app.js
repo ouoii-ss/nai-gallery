@@ -3,11 +3,47 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260912p4';
+  const APP_VER = '20260918p5';
   console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
+
+  // —— 图片加载失败兜底：别让浏览器的破图图标看起来像「图被删了」——
+  // 换成能看懂的提示图 + 点击重试（网络抖动、首次部署 CDN 还没就绪，都能这样救回来）
+  const IMG_FAIL_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">' +
+    '<rect width="100%" height="100%" fill="#f7eef1"/>' +
+    '<text x="50%" y="45%" font-family="sans-serif" font-size="15" fill="#b08b95" text-anchor="middle">图片没加载出来</text>' +
+    '<text x="50%" y="54%" font-family="sans-serif" font-size="12" fill="#b08b95" text-anchor="middle">点一下重试</text>' +
+    '<text x="50%" y="63%" font-family="sans-serif" font-size="11" fill="#c0a3ab" text-anchor="middle">网络慢时多等一会儿也会出来</text>' +
+    '</svg>'
+  );
+  window.__imgFail = function (img) {
+    if (!img || img.dataset.failed === '1') return;
+    const real = img.getAttribute('src') || '';
+    if (!real || real.indexOf('data:') === 0) { img.style.background = '#e9e6e1'; return; }
+    img.dataset.failed = '1';
+    img.dataset.real = real;
+    img.src = IMG_FAIL_SVG;
+    img.classList.add('img-broken');
+  };
+  window.__imgRetry = function (img) {
+    let real = (img && img.dataset.real) || '';
+    if (!real) return;
+    real = real.replace(/[?&]_r=\d+/g, '');   // 别让重试参数越堆越多
+    delete img.dataset.failed;
+    img.classList.remove('img-broken');
+    img.src = real + (real.indexOf('?') >= 0 ? '&' : '?') + '_r=' + Date.now();
+  };
+  // 点提示图 = 重试（带时间戳绕过缓存）；点图片以外的地方行为不变
+  document.addEventListener('click', (ev) => {
+    const t = ev.target;
+    const img = t && t.closest ? t.closest('img[data-failed="1"]') : null;
+    if (!img) return;
+    ev.preventDefault(); ev.stopPropagation();
+    window.__imgRetry(img);
+  }, true);
 
   // 画师词 / 提示词 的唯一判定：正面提示词里有没有画师标记
   // ① 显式 artist 关键字（V4 及以前）：artist: xxx / n::artist xxx::
@@ -390,7 +426,7 @@
     d.innerHTML = `
       <div class="c-img-wrap">
         ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
-        <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
+        <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="window.__imgFail(this)">
       </div>
       <div class="c-body">
         <div class="c-title">${esc(a.title || '无题')}</div>
@@ -409,7 +445,18 @@
   }
   function renderLb() {
     const a = lbList[lbIdx]; if (!a) return;
-    $('#lbImg').src = a.full || a.thumb;
+    const lb = $('#lbImg');
+    // 原图缺失/太大拉不动时自动退回缩略图，再不行才显示提示图（而不是浏览器的破图图标）
+    delete lb.dataset.failed; lb.dataset.tried = ''; lb.classList.remove('img-broken');
+    lb.onerror = function () {
+      const thumb = a.thumb || '';
+      if (thumb && lb.getAttribute('src') !== thumb && lb.dataset.tried !== '1') {
+        lb.dataset.tried = '1'; lb.src = thumb; return;
+      }
+      if (!lb.dataset.real) lb.dataset.real = thumb || lb.getAttribute('src') || '';
+      window.__imgFail(lb);
+    };
+    lb.src = a.full || a.thumb;
     $('#lbTitle').textContent = a.title || '无题';
     $('#lbArtist').textContent = '画师：' + (a.artist || '未知');
     $('#lbPos').value = a.positive || '';
@@ -493,7 +540,7 @@
         <div class="flip-inner">
           <div class="flip-face flip-back"><div>🔮</div><div class="hint">点我翻牌</div></div>
           <div class="flip-face flip-front">
-            <img src="${esc(a.thumb || a.full)}" alt="" onerror="this.style.background='#e9e6e1'">
+            <img src="${esc(a.thumb || a.full)}" alt="" onerror="window.__imgFail(this)">
             <div class="f-cap">${esc(a.title || '无题')}</div>
             <div class="f-art">${esc(a.artist || '未知画师')}</div>
           </div>
@@ -514,7 +561,7 @@
       const img = v.thumbnail || '';
       d.innerHTML = `
         <div class="c-img-wrap">
-          ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="this.style.background='#e9e6e1';this.remove()">` : `<img src="" alt="" style="background:#e9e6e1">`}
+          ${img ? `<img loading="lazy" src="${esc(img)}" alt="" onerror="window.__imgFail(this)">` : `<img src="" alt="" style="background:#e9e6e1">`}
         </div>
         <div class="c-body">
           <div class="c-title">${esc(v.name || 'Vibe')}</div>
