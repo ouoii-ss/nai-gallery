@@ -353,9 +353,10 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
 .center { text-align: center; }
 .hidden { display: none !important; }
 
-/* ===== 筛选：搜框永远独占一行，3 个 select 共享下一行 ===== */
+/* ===== 筛选：搜索框 + 批次/排序 同行（画师下拉已删，改侧栏按画师钻取） ===== */
 .filters { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 24px; }
-.filters .f-search-row { display: flex; gap: 10px; }
+.filters .f-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filters .f-search-row { display: flex; gap: 10px; flex: 1 1 240px; min-width: 0; }
 .filters .f-sel-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .f-search {
   flex: 1 1 auto; min-width: 0; padding: 12px 18px;
@@ -367,13 +368,33 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
 .f-search::placeholder { color: var(--ink-3); font-style: italic; }
 .f-search:focus { border-color: var(--pink-2); background: rgba(255,255,255,0.85); box-shadow: 0 0 0 3px rgba(143,155,134,0.22); }
 .f-sel {
-  flex: 1 1 0; min-width: 110px; padding: 12px 16px;
+  min-width: 110px; padding: 12px 16px;
   border: 1px solid rgba(255,255,255,0.6); border-radius: 999px;
   background: rgba(255,255,255,0.55); font-size: 14px; color: var(--ink);
   outline: none; cursor: pointer; backdrop-filter: blur(10px); transition: border-color .15s;
 }
 .f-sel:focus { border-color: var(--pink-2); }
+.search-info { font-size: 13px; color: var(--ink-2); padding: 6px 14px; border-radius: 10px; background: rgba(255,255,255,0.45); }
+.search-info.hidden { display: none; }
+.search-info b { color: var(--pink-2); font-weight: 700; }
 .hideToggle { font-size: 13px; color: var(--ink-3); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* ===== 侧栏按画师钻取（画师词激活时出现） ===== */
+.artist-drill { margin: 6px 0 2px; padding-left: 6px; }
+.artist-drill.hidden { display: none; }
+.ad-label { font-size: 11px; color: var(--ink-3); letter-spacing: .08em; margin: 4px 0 6px; text-transform: uppercase; }
+.ad-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--card-border); background: rgba(255,255,255,0.5); color: var(--ink-2);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.ad-chip:hover { border-color: var(--pink-2); color: var(--ink); }
+.ad-chip.on { background: rgba(143,155,134,0.30); border-color: var(--pink-2); color: var(--ink); font-weight: 600; }
+.ad-cnt { font-size: 11px; color: var(--ink-3); background: rgba(0,0,0,0.06); border-radius: 999px; padding: 0 6px; }
+html.theme-night .ad-chip { background: rgba(50,47,41,0.45); }
+html.theme-night .ad-cnt { background: rgba(255,255,255,0.10); }
 
 /* ===== 画廊网格：图片为主体的高级卡片 ===== */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 22px; }
@@ -409,6 +430,17 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
   padding: 4px 10px; border-radius: 999px; backdrop-filter: blur(4px); letter-spacing: .02em;
   z-index: 2;
 }
+/* 提示词搜索角标：右上角，避开左上的批次标签 */
+.sim-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 3;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  padding: 4px 10px; border-radius: 999px; color: #fff; backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.sim-badge.exact { background: rgba(86,132,98,0.95); }       /* 正向完全一致：深莫兰迪绿 */
+.sim-badge.exact-neg { background: rgba(118,108,160,0.95); } /* 负向完全一致：雾霾紫蓝 */
+html.theme-night .sim-badge.exact { background: rgba(70,110,82,0.95); }
+html.theme-night .sim-badge.exact-neg { background: rgba(104,96,148,0.95); }
 .card.hidden-mark { outline: 2px solid var(--pink-2); outline-offset: -2px; }
 .card.hidden-mark::after {
   content: "已隐藏"; position: absolute; bottom: 70px; right: 10px;
@@ -578,8 +610,9 @@ html.theme-night .nav-section.browse .nav-link.active .cnt { background: var(--g
   .user-chip { top: 12px; right: 12px; padding: 4px 10px 4px 6px; }
 
   .filters { gap: 8px; margin: 10px 0 18px; }
-  .f-search-row { gap: 8px; }
-  .f-sel-row { gap: 8px; }
+  .f-row { gap: 8px; }
+  .f-search-row { flex: 1 1 100%; gap: 8px; }
+  .f-sel-row { flex: 1 1 100%; gap: 8px; }
   .f-search { padding: 11px 15px; font-size: 14px; }
   .f-sel { min-width: 90px; padding: 10px 11px; font-size: 13px; }
   .hideToggle { font-size: 12px; }

@@ -3,8 +3,8 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260918p5';
-  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词');
+  const APP_VER = '20260923p7';
+  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词 · 负向提示词搜索');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
@@ -104,6 +104,47 @@
 
   let galleryPage = 0, galleryListCache = [];
   let lbList = [], lbIdx = 0;
+
+  // 提示词搜索（整段粘贴权重串时启用）：只找词集合完全相等的（正/负向都查）
+  let searchModeIsPrompt = false;   // 当前是否处于提示词搜索模式
+  let searchSimMap = null;          // Map<artworkId, 'exact' | 'exact-neg'>，命中卡片显示角标
+
+  // 去掉 NAI 加权括号语法：W::内容::  -> 内容（忽略权重数值差异）
+  function stripPromptWeights(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/-?\d*\.?\d+\s*::\s*([\s\S]*?)\s*::/g, '$1')
+      .replace(/::\s*([\s\S]*?)\s*::/g, '$1');
+  }
+  // 提示词归一化：去权重 + 小写 + 逗号/空白/全角标点统一为逗号
+  function normPrompt(s) {
+    if (!s) return '';
+    return stripPromptWeights(s)
+      .toLowerCase()
+      .replace(/[\s,，、;；]+/g, ',')
+      .replace(/^,+/, '')
+      .replace(/,+$/, '');
+  }
+  // 把归一化串拆成词袋（集合，去重，去单字噪声）
+  function bagOf(normStr) {
+    const m = new Map();
+    if (!normStr) return m;
+    normStr.split(',').forEach(tok => {
+      tok = tok.trim();
+      if (tok.length < 2) return;
+      m.set(tok, 1);
+    });
+    return m;
+  }
+  // 判断用户是不是整段粘贴了提示词（而非普通关键词）
+  function isPromptQuery(raw) {
+    const q = (raw || '').trim();
+    if (q.length < 60) return false;
+    if (/::/.test(q)) return true;                         // NAI 加权串 0.6::artist x::
+    const toks = q.split(/[,\n]+/).map(t => t.trim()).filter(Boolean);
+    if (toks.length >= 10) return true;                   // 一长串标签词
+    return false;
+  }
 
   function toast(msg) {
     const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -208,11 +249,24 @@
     load();
   }
 
+  // 垃圾标签黑名单：vibe 强度数值被老迁移代码误写成标签 + 历史测试残留（与私有画廊同款，build_public 重新打包也不会再带回来）
+  const _PG_JUNK_TAGS = new Set(['5', '4.5', '测试标签XYZ', '新增测试07477']);
+  function _pgHealTags(list) {
+    for (const a of list) {
+      if (Array.isArray(a.tags) && a.tags.length) {
+        const keep = a.tags.filter(t => !_PG_JUNK_TAGS.has(String(t).trim()));
+        if (keep.length !== a.tags.length) a.tags = keep;
+      }
+    }
+    return list;
+  }
+
   async function load() {
     let data = null;
     try { const r = await fetch('data/index.json', { cache: 'no-store' }); if (r.ok) data = await r.json(); } catch (e) {}
     if (!data && window.__SEED) data = window.__SEED;
     if (!data || !data.artworks) { toast('数据加载失败：请用本地服务器打开或部署后访问'); return; }
+    _pgHealTags(data.artworks);   // 垃圾标签自愈：加载即剥（防旧快照 / 重新打包写回）
     ART = (data.artworks || []).map(a => ({ ...a, thumb: normPath(a.thumb), full: normPath(a.full) }));
     VIB = (data.vibes || []).map(v => ({ ...v, thumbnail: normPath(v.thumbnail) }));
     boot();
@@ -222,9 +276,12 @@
     $('#stat').textContent = `${ART.length} 张画 · ${VIB.length} 个 Vibe`;
     const _hm = $('#heroMeta');
     if (_hm) _hm.textContent = `${ART.length} 画作 · ${VIB.length} Vibe`;
-    fillSelect($('#fArtist'), [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
+    // 画师下拉已移除（改为侧栏「画师词 → 按画师钻取」），这里无条件跳过；保留 guard 以防回退
+    const fArtistEl = $('#fArtist');
+    if (fArtistEl) fillSelect(fArtistEl, [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
     updateSidebarCats();   // 侧栏画师词 / 提示词 计数
+    renderArtistDrill();  // 侧栏按画师钻取（初始隐藏，点「画师词」才展开）
     restoreUIState();
     wire();
     switchView('gallery');
@@ -282,7 +339,8 @@
     const _nt = $('#navToggle'); if (_nt) _nt.addEventListener('click', openMobileDrawer);
     const _bd = $('#navBackdrop'); if (_bd) _bd.addEventListener('click', closeMobileDrawer);
     $('#search').addEventListener('input', (e) => { filters.q = e.target.value.trim().toLowerCase(); resetGallery(); });
-    $('#fArtist').addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
+    const fArtistEl2 = $('#fArtist');
+    if (fArtistEl2) fArtistEl2.addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
     $('#fBatch').addEventListener('change', (e) => { filters.batch = e.target.value; resetGallery(); });
     $('#fSort').addEventListener('change', (e) => { filters.sort = e.target.value; resetGallery(); });
     // 侧栏分类：画师词 / 提示词
@@ -331,6 +389,7 @@
     return ART;
   }
   function applyFilters() {
+    if (!filters.q) { searchModeIsPrompt = false; searchSimMap = null; }  // 清空搜索时复位提示词模式
     let list = visibleArt();
     if (filters.artist) list = list.filter(a => a.artist === filters.artist);
     if (filters.batch) list = list.filter(a => a.batch === filters.batch);
@@ -338,11 +397,28 @@
     if (filters.cat === 'streams') list = list.filter(a => hasArtistMarker(a.positive));
     else if (filters.cat === 'prompts') list = list.filter(a => !hasArtistMarker(a.positive));
     if (filters.q) {
-      const q = filters.q;
-      list = list.filter(a => {
-        const hay = [a.title, a.artist, (a.tags || []).join(','), a.positive, a.negative, a.batch, a.note].join(' ').toLowerCase();
-        return hay.includes(q);
-      });
+      const qRaw = filters.q;   // 已 .toLowerCase().trim()
+      if (isPromptQuery(qRaw)) {
+        // 提示词搜索：只找词集合完全相等的（权重/顺序/空格/全角逗号已被 normPrompt 抹平），正/负向都查
+        searchModeIsPrompt = true;
+        const qBag = bagOf(normPrompt(qRaw));
+        const _bagEq = (bag, ref) => { if (bag.size !== ref.size) return false; for (const k of ref.keys()) if (!bag.has(k)) return false; return true; };
+        const kindMap = new Map();   // id -> 'exact' | 'exact-neg'
+        const out = [];
+        for (const a of list) {
+          if (_bagEq(bagOf(normPrompt(a.positive)), qBag)) { kindMap.set(a.id, 'exact'); out.push(a); continue; }
+          if (_bagEq(bagOf(normPrompt(a.negative)), qBag)) { kindMap.set(a.id, 'exact-neg'); out.push(a); }
+        }
+        list = out;
+        searchSimMap = out.length ? kindMap : null;
+      } else {
+        searchModeIsPrompt = false;
+        searchSimMap = null;
+        list = list.filter(a => {
+          const hay = [a.title, a.artist, (a.tags || []).join(','), a.positive, a.negative, a.batch, a.note].join(' ').toLowerCase();
+          return hay.includes(qRaw);
+        });
+      }
     }
     list.sort((a, b) => {
       if (filters.sort === 'artist') return (a.artist || '').localeCompare(b.artist || '') || (b.createdAt || 0) - (a.createdAt || 0);
@@ -354,9 +430,11 @@
   // 侧栏画师词 / 提示词 分类：切换过滤 + 刷新计数与高亮
   function toggleCat(c) {
     filters.cat = (filters.cat === c) ? '' : c;
+    if (filters.cat !== 'streams') filters.artist = '';   // 离开画师词时清掉画师筛选，避免卡在隐藏状态
     if (view !== 'gallery') switchView('gallery');   // 切到画廊并自动 resetGallery
     else resetGallery();
     updateSidebarCats();
+    renderArtistDrill();
   }
   function updateSidebarCats() {
     let streamsN = 0;
@@ -369,9 +447,55 @@
     if (sb) sb.classList.toggle('active', filters.cat === 'streams');
     if (pb) pb.classList.toggle('active', filters.cat === 'prompts');
   }
+  // 侧栏「画师词」激活时，按画师名钻取（弥补已删除的顶栏画师下拉）
+  function renderArtistDrill() {
+    const wrap = $('#artistDrill'); if (!wrap) return;
+    if (filters.cat !== 'streams') { wrap.classList.add('hidden'); wrap.innerHTML = ''; return; }
+    const counts = new Map();
+    for (const a of ART) {
+      if (!hasArtistMarker(a.positive)) continue;
+      const ar = (a.artist || '').trim();
+      if (!ar) continue;
+      counts.set(ar, (counts.get(ar) || 0) + 1);
+    }
+    const names = [...counts.keys()].sort((x, y) => counts.get(y) - counts.get(x));
+    if (!names.length) { wrap.classList.add('hidden'); wrap.innerHTML = ''; return; }
+    let html = '<div class="ad-label">按画师</div><div class="ad-chips">';
+    for (const n of names) {
+      const on = (filters.artist === n) ? ' on' : '';
+      html += `<button class="ad-chip${on}" data-artist="${esc(n)}" type="button" title="只看 ${esc(n)} 的画作">${esc(n)}<span class="ad-cnt">${counts.get(n)}</span></button>`;
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
+    wrap.classList.remove('hidden');
+    wrap.querySelectorAll('.ad-chip').forEach(b => b.addEventListener('click', () => {
+      const n = b.dataset.artist;
+      filters.artist = (filters.artist === n) ? '' : n;
+      resetGallery();
+      renderArtistDrill();
+    }));
+  }
+  // 搜索信息条：提示词搜索时如实显示正向/负向完全一致张数
+  function updateSearchInfo() {
+    const el = $('#searchInfo'); if (!el) return;
+    if (searchModeIsPrompt && searchSimMap) {
+      let pos = 0, neg = 0;
+      searchSimMap.forEach(k => { if (k === 'exact-neg') neg++; else pos++; });
+      const parts = [];
+      if (pos) parts.push(`<b>${pos}</b> 张正向完全一致`);
+      if (neg) parts.push(`<b>${neg}</b> 张负向完全一致`);
+      el.innerHTML = '提示词词集合完全相等：' + parts.join(' · ');
+      el.classList.remove('hidden');
+    } else if (searchModeIsPrompt && !searchSimMap) {
+      el.textContent = '没有提示词词集合完全相等的画作（可能多了/少了词，或有错别字）';
+      el.classList.remove('hidden');
+    } else {
+      el.classList.add('hidden');
+    }
+  }
   function resetGallery() {
     galleryPage = 0; galleryListCache = applyFilters();
-    renderPage(); renderPager();
+    renderPage(); renderPager(); updateSearchInfo();
   }
   // 渲染当前页（每页 PAGE 张），不再无限滚动
   function renderPage() {
@@ -423,10 +547,19 @@
   function artCard(a) {
     const d = document.createElement('div');
     d.className = 'card';
+    // 提示词搜索角标：命中的就是完全一致（正向绿 / 负向紫蓝）
+    let simBadge = '';
+    if (searchModeIsPrompt && searchSimMap && searchSimMap.has(a.id)) {
+      const kind = searchSimMap.get(a.id);
+      simBadge = kind === 'exact-neg'
+        ? `<span class="sim-badge exact-neg" title="负向提示词词集合与粘贴内容完全相同（权重数值/顺序/空格差异已忽略）">负向完全一致</span>`
+        : `<span class="sim-badge exact" title="提示词词集合与粘贴内容完全相同（权重数值/顺序/空格差异已忽略）">完全一致</span>`;
+    }
     d.innerHTML = `
       <div class="c-img-wrap">
         ${a.batch ? `<div class="c-batch">${esc(a.batch)}</div>` : ''}
         <img loading="lazy" src="${esc(a.thumb || a.full)}" alt="" onerror="window.__imgFail(this)">
+        ${simBadge}
       </div>
       <div class="c-body">
         <div class="c-title">${esc(a.title || '无题')}</div>
