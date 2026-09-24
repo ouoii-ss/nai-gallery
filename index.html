@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NAI 画廊 · NAI 画师串</title>
-<link rel="stylesheet" href="styles.css?v=20260923p7">
+<link rel="stylesheet" href="styles.css?v=20260924p8">
 </head>
 <body>
 <!-- Discord 登录墙：未登录时盖住整个画廊（仅配置并登录后可见） -->
@@ -74,16 +74,23 @@
         </button>
       </div>
 
-      <!-- 浏览分类：画师词 / 提示词（按每张画作正面提示词里的 artist: 标记区分，不碰 artist 字段） -->
+      <!-- 浏览分类：画师词 / 提示词（与私有画廊同款：计数徽标 + 折叠箭头 + 画师子列表） -->
       <div class="nav-section browse">
         <h4>分类</h4>
         <button class="nav-link browse-btn" id="streamsBtn" type="button" title="只看正面提示词含 artist: 标记（画师词）的画作；再点一次取消">
-          <span class="ico">❀</span><span class="lbl">画师词<span class="cnt" id="streamsCount">0</span></span>
+          <span class="ico">❀</span><span class="lbl">画师词</span><span class="cnt" id="streamsCount">0</span><span class="caret" id="streamsCaret" title="展开 / 收起子分类">▸</span>
         </button>
+        <!-- 画师词子分类：按画师列出（圆点 + 名称 + 计数），点画师名只看该画师 -->
+        <div id="streamsSeriesWrap" class="self-series-wrap collapsed">
+          <div id="streamsSeriesItems"></div>
+        </div>
         <button class="nav-link browse-btn" id="promptsBtn" type="button" title="只看无 artist: 标记的纯提示词画作；再点一次取消">
-          <span class="ico">✦</span><span class="lbl">提示词<span class="cnt" id="promptsCount">0</span></span>
+          <span class="ico">✦</span><span class="lbl">提示词</span><span class="cnt" id="promptsCount">0</span><span class="caret" id="promptsCaret" title="展开 / 收起子分类">▸</span>
         </button>
-        <div id="artistDrill" class="artist-drill hidden"></div>
+        <!-- 提示词子分类：按画师名字自动分组，与画师词同款 -->
+        <div id="promptsSeriesWrap" class="self-series-wrap collapsed">
+          <div id="promptsSeriesItems"></div>
+        </div>
       </div>
 
       <div class="sidebar-foot">
@@ -182,6 +189,6 @@
 <script src="data/seed.js"></script>
 <!-- 测试/调试用：覆盖 Discord Client ID（生产留空，由 app.js 常量接管） -->
 <script>window.__DC_ID_OVERRIDE = window.__DC_ID_OVERRIDE || '';</script>
-<script src="app.js?v=20260923p7"></script>
+<script src="app.js?v=20260924p8"></script>
 </body>
 </html>

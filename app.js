@@ -3,8 +3,8 @@
   const DISCORD_CLIENT_ID = window.__DC_ID_OVERRIDE || '1545126834310488145';  // Discord 应用 APP ID（已填）；留空=不启用登录墙
   const DC_ALLOW = ['1397145912081649685'];  // 白名单：只放这些 Discord 用户 ID 进；留空=任何 Discord 账号可进
   const PAGE = 24;
-  const APP_VER = '20260923p7';
-  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类：画师词 / 提示词 · 负向提示词搜索');
+  const APP_VER = '20260924p8';
+  console.log('[NAI 公开画廊] app 版本', APP_VER, '| 莫兰迪磨砂风 · 侧栏分类折叠子列表（与私有画廊同款） · 负向提示词搜索');
   const $ = (s) => document.querySelector(s);
   const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const normPath = (p) => (p || '').replace(/^\//, '');   // 转相对路径，兼容子路径部署
@@ -100,7 +100,9 @@
 
   let ART = [], VIB = [];
   let view = 'gallery';
-  const filters = { q: '', artist: '', batch: '', sort: 'new', cat: '' };  // cat: '' | 'streams'(画师词) | 'prompts'(提示词)
+  const filters = { q: '', artist: '', promptArtist: '', batch: '', sort: 'new', cat: '' };  // cat: '' | 'streams'(画师词) | 'prompts'(提示词)；artist=画师词内钻取，promptArtist=提示词内按画师分组钻取
+  let streamsOpen = false;   // 侧栏「画师词」子列表是否展开（与私有画廊同款）
+  let promptsOpen = false;   // 侧栏「提示词」子列表是否展开
 
   let galleryPage = 0, galleryListCache = [];
   let lbList = [], lbIdx = 0;
@@ -281,7 +283,8 @@
     if (fArtistEl) fillSelect(fArtistEl, [...new Set(ART.map(a => a.artist).filter(Boolean))].sort());
     fillSelect($('#fBatch'), [...new Set(ART.map(a => a.batch).filter(Boolean))].sort());
     updateSidebarCats();   // 侧栏画师词 / 提示词 计数
-    renderArtistDrill();  // 侧栏按画师钻取（初始隐藏，点「画师词」才展开）
+    renderStreamsNav();   // 画师词子列表（折叠，点箭头展开）
+    renderPromptsNav();   // 提示词子列表（折叠，点箭头展开）
     restoreUIState();
     wire();
     switchView('gallery');
@@ -343,9 +346,11 @@
     if (fArtistEl2) fArtistEl2.addEventListener('change', (e) => { filters.artist = e.target.value; resetGallery(); });
     $('#fBatch').addEventListener('change', (e) => { filters.batch = e.target.value; resetGallery(); });
     $('#fSort').addEventListener('change', (e) => { filters.sort = e.target.value; resetGallery(); });
-    // 侧栏分类：画师词 / 提示词
+    // 侧栏分类：画师词 / 提示词（点按钮切过滤；点箭头只展开/收起子列表）
     const _sb = $('#streamsBtn'); if (_sb) _sb.addEventListener('click', () => toggleCat('streams'));
     const _pb = $('#promptsBtn'); if (_pb) _pb.addEventListener('click', () => toggleCat('prompts'));
+    const _sc = $('#streamsCaret'); if (_sc) _sc.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); streamsOpen = !streamsOpen; updateSidebarCats(); });
+    const _pc2 = $('#promptsCaret'); if (_pc2) _pc2.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); promptsOpen = !promptsOpen; updateSidebarCats(); });
 
     // 灯箱
     $('#lbX').addEventListener('click', closeLightbox);
@@ -396,6 +401,9 @@
     // 侧栏分类：画师词=正面提示词含 artist: 标记；提示词=不含
     if (filters.cat === 'streams') list = list.filter(a => hasArtistMarker(a.positive));
     else if (filters.cat === 'prompts') list = list.filter(a => !hasArtistMarker(a.positive));
+    // 子列表钻取：画师词内按画师 / 提示词内按画师分组
+    if (filters.cat === 'streams' && filters.artist) list = list.filter(a => (a.artist || '').trim() === filters.artist);
+    if (filters.cat === 'prompts' && filters.promptArtist) list = list.filter(a => (a.artist || '').trim() === filters.promptArtist);
     if (filters.q) {
       const qRaw = filters.q;   // 已 .toLowerCase().trim()
       if (isPromptQuery(qRaw)) {
@@ -427,14 +435,16 @@
     });
     return list;
   }
-  // 侧栏画师词 / 提示词 分类：切换过滤 + 刷新计数与高亮
+  // 侧栏画师词 / 提示词 分类：切换过滤 + 刷新计数与高亮（与私有画廊同款交互）
   function toggleCat(c) {
     filters.cat = (filters.cat === c) ? '' : c;
-    if (filters.cat !== 'streams') filters.artist = '';   // 离开画师词时清掉画师筛选，避免卡在隐藏状态
+    if (filters.cat !== 'streams') filters.artist = '';        // 离开画师词时清掉画师筛选，避免卡在隐藏状态
+    if (filters.cat !== 'prompts') filters.promptArtist = '';  // 离开提示词时清掉画师分组筛选
     if (view !== 'gallery') switchView('gallery');   // 切到画廊并自动 resetGallery
     else resetGallery();
     updateSidebarCats();
-    renderArtistDrill();
+    renderStreamsNav();
+    renderPromptsNav();
   }
   function updateSidebarCats() {
     let streamsN = 0;
@@ -446,33 +456,68 @@
     const sb = $('#streamsBtn'), pb = $('#promptsBtn');
     if (sb) sb.classList.toggle('active', filters.cat === 'streams');
     if (pb) pb.classList.toggle('active', filters.cat === 'prompts');
+    const scaret = $('#streamsCaret'); if (scaret) scaret.textContent = streamsOpen ? '▾' : '▸';
+    const pcaret = $('#promptsCaret'); if (pcaret) pcaret.textContent = promptsOpen ? '▾' : '▸';
+    renderStreamsNav(); renderPromptsNav();   // 同步子列表折叠态 + 内容（与私有画廊一致）
   }
-  // 侧栏「画师词」激活时，按画师名钻取（弥补已删除的顶栏画师下拉）
-  function renderArtistDrill() {
-    const wrap = $('#artistDrill'); if (!wrap) return;
-    if (filters.cat !== 'streams') { wrap.classList.add('hidden'); wrap.innerHTML = ''; return; }
-    const counts = new Map();
+  // 画师词子分类：按画师列出（圆点 + 名称 + 计数，与私有画廊同款），点画师名只看该画师
+  function renderStreamsNav() {
+    const wrap = $('#streamsSeriesWrap'); if (!wrap) return;
+    wrap.classList.toggle('collapsed', !streamsOpen);
+    const items = $('#streamsSeriesItems'); if (!items) return;
+    const map = new Map(); let uncat = 0;
     for (const a of ART) {
       if (!hasArtistMarker(a.positive)) continue;
-      const ar = (a.artist || '').trim();
-      if (!ar) continue;
-      counts.set(ar, (counts.get(ar) || 0) + 1);
+      const n = (a.artist || '').trim();
+      if (n) map.set(n, (map.get(n) || 0) + 1); else uncat++;
     }
-    const names = [...counts.keys()].sort((x, y) => counts.get(y) - counts.get(x));
-    if (!names.length) { wrap.classList.add('hidden'); wrap.innerHTML = ''; return; }
-    let html = '<div class="ad-label">按画师</div><div class="ad-chips">';
-    for (const n of names) {
-      const on = (filters.artist === n) ? ' on' : '';
-      html += `<button class="ad-chip${on}" data-artist="${esc(n)}" type="button" title="只看 ${esc(n)} 的画作">${esc(n)}<span class="ad-cnt">${counts.get(n)}</span></button>`;
+    const names = [...map.keys()].sort((x, y) => x.localeCompare(y, 'zh'));
+    const row = (key, label, n, active) =>
+      `<button type="button" class="series-nav ${active ? 'active' : ''}" data-streams-artist="${esc(key)}">
+         <span class="series-dot"></span><span class="series-name">${esc(label)}</span><span class="series-cnt">${n}</span>
+       </button>`;
+    let html = '';
+    for (const s of names) html += row(s, s, map.get(s), filters.cat === 'streams' && filters.artist === s);
+    if (uncat) html += row('', '未署名', uncat, filters.cat === 'streams' && filters.artist === '');
+    items.innerHTML = html || '<div class="series-empty">画师词还没有画作</div>';
+    items.querySelectorAll('[data-streams-artist]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.streamsArtist;
+      const wasActive = filters.cat === 'streams' && filters.artist === k;
+      filters.cat = 'streams';
+      filters.artist = wasActive ? '' : k;
+      streamsOpen = true;
+      if (view !== 'gallery') switchView('gallery'); else resetGallery();
+      updateSidebarCats(); renderStreamsNav();
+    }));
+  }
+  // 提示词子分类：按画师名字自动分组（与画师词同款样式），点画师名只看该画师的无标记画作
+  function renderPromptsNav() {
+    const wrap = $('#promptsSeriesWrap'); if (!wrap) return;
+    wrap.classList.toggle('collapsed', !promptsOpen);
+    const items = $('#promptsSeriesItems'); if (!items) return;
+    const map = new Map(); let noArtist = 0;
+    for (const a of ART) {
+      if (hasArtistMarker(a.positive)) continue;
+      const n = (a.artist || '').trim();
+      if (n) map.set(n, (map.get(n) || 0) + 1); else noArtist++;
     }
-    html += '</div>';
-    wrap.innerHTML = html;
-    wrap.classList.remove('hidden');
-    wrap.querySelectorAll('.ad-chip').forEach(b => b.addEventListener('click', () => {
-      const n = b.dataset.artist;
-      filters.artist = (filters.artist === n) ? '' : n;
-      resetGallery();
-      renderArtistDrill();
+    const names = [...map.keys()].sort((x, y) => x.localeCompare(y, 'zh'));
+    const row = (key, label, n, active) =>
+      `<button type="button" class="series-nav ${active ? 'active' : ''}" data-prompt-artist="${esc(key)}">
+         <span class="series-dot"></span><span class="series-name">${esc(label)}</span><span class="series-cnt">${n}</span>
+       </button>`;
+    let html = '';
+    for (const s of names) html += row(s, s, map.get(s), filters.cat === 'prompts' && filters.promptArtist === s);
+    if (noArtist) html += row('', '未署名', noArtist, filters.cat === 'prompts' && filters.promptArtist === '');
+    items.innerHTML = html || '<div class="series-empty">提示词还没有画作</div>';
+    items.querySelectorAll('[data-prompt-artist]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.promptArtist;
+      const wasActive = filters.cat === 'prompts' && filters.promptArtist === k;
+      filters.cat = 'prompts';
+      filters.promptArtist = wasActive ? '' : k;
+      promptsOpen = true;
+      if (view !== 'gallery') switchView('gallery'); else resetGallery();
+      updateSidebarCats(); renderPromptsNav();
     }));
   }
   // 搜索信息条：提示词搜索时如实显示正向/负向完全一致张数
